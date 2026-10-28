@@ -104,13 +104,12 @@ BEGIN
         RAISE EXCEPTION 'La transferencia % no posee renglones asociados', p_nro_solicitud;
     END IF;
 
-    -- 4. Verificación exhaustiva y bloqueo de stock en depósito central por cada vino
+    -- 4. Verificación y bloqueo de stock en depósito central por cada vino
     FOR r IN (
         SELECT cod_vino, cantidad
         FROM renglon_transferencia
         WHERE nro_solicitud = p_nro_solicitud
     ) LOOP
-        -- Bloquear la fila del vino en stock_deposito
         SELECT cantidad INTO v_stock_deposito_actual
         FROM stock_deposito
         WHERE cod_vino = r.cod_vino
@@ -122,18 +121,18 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- 5. Descontar botellas de stock_deposito
+    -- 5. Descontar botellas de stock_deposito (usando alias rt)
     UPDATE stock_deposito d
-    SET cantidad = d.cantidad - r.cantidad
-    FROM renglon_transferencia r
-    WHERE r.nro_solicitud = p_nro_solicitud
-      AND d.cod_vino = r.cod_vino;
+    SET cantidad = d.cantidad - rt.cantidad
+    FROM renglon_transferencia rt
+    WHERE rt.nro_solicitud = p_nro_solicitud
+      AND d.cod_vino = rt.cod_vino;
 
-    -- 6. Sumar botellas a stock_sala (crea el registro si no existía)
+    -- 6. Sumar botellas a stock_sala (usando alias rt)
     INSERT INTO stock_sala (id_sala, cod_vino, cantidad)
-    SELECT v_id_sala, r.cod_vino, r.cantidad
-    FROM renglon_transferencia r
-    WHERE r.nro_solicitud = p_nro_solicitud
+    SELECT v_id_sala, rt.cod_vino, rt.cantidad
+    FROM renglon_transferencia rt
+    WHERE rt.nro_solicitud = p_nro_solicitud
     ON CONFLICT (id_sala, cod_vino)
     DO UPDATE SET cantidad = stock_sala.cantidad + EXCLUDED.cantidad;
 
