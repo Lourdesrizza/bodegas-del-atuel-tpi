@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.dump
+*.tar
+# Si el dump comprimido excede los límites de GitHub se deja ignorado:
+# dump_completo.sql.gz
