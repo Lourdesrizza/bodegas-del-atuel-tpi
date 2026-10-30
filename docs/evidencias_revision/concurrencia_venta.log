@@ -1,0 +1,29 @@
+Sesion A
+BEGIN
+INSERT 0 1
+ pg_sleep 
+----------
+ 
+(1 row)
+
+COMMIT
+
+Sesion B
+ERROR:  new row for relation "stock_sala" violates check constraint "ck_stock_sala_no_negativo"
+DETAIL:  Failing row contains (1, 1, -1).
+CONTEXT:  SQL statement "UPDATE stock_sala
+    SET cantidad = cantidad - NEW.cantidad
+    WHERE id_sala = v_sala AND cod_vino = NEW.cod_vino"
+PL/pgSQL function trg_fn_actualizar_stock_totales_venta() line 12 at SQL statement
+
+Estado final
+ cantidad 
+----------
+        0
+(1 row)
+
+ nro_comprobante 
+-----------------
+           90003
+(1 row)
+

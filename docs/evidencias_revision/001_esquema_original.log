@@ -1,0 +1,87 @@
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+psql:db/migrations/001_esquema.sql:7: NOTICE:  table "auditoria_precio" does not exist, skipping
+psql:db/migrations/001_esquema.sql:8: NOTICE:  table "renglon_comprobante" does not exist, skipping
+psql:db/migrations/001_esquema.sql:9: NOTICE:  table "comprobante" does not exist, skipping
+psql:db/migrations/001_esquema.sql:10: NOTICE:  table "renglon_transferencia" does not exist, skipping
+psql:db/migrations/001_esquema.sql:11: NOTICE:  table "transferencia" does not exist, skipping
+psql:db/migrations/001_esquema.sql:12: NOTICE:  table "renglon_ingreso" does not exist, skipping
+psql:db/migrations/001_esquema.sql:13: NOTICE:  table "ingreso" does not exist, skipping
+psql:db/migrations/001_esquema.sql:14: NOTICE:  table "stock_sala" does not exist, skipping
+psql:db/migrations/001_esquema.sql:15: NOTICE:  table "stock_deposito" does not exist, skipping
+psql:db/migrations/001_esquema.sql:16: NOTICE:  table "transportista_localidad" does not exist, skipping
+psql:db/migrations/001_esquema.sql:17: NOTICE:  table "transportista" does not exist, skipping
+psql:db/migrations/001_esquema.sql:18: NOTICE:  table "permiso_exportacion" does not exist, skipping
+psql:db/migrations/001_esquema.sql:19: NOTICE:  table "exportador" does not exist, skipping
+psql:db/migrations/001_esquema.sql:20: NOTICE:  table "distribuidor" does not exist, skipping
+psql:db/migrations/001_esquema.sql:21: NOTICE:  table "socio" does not exist, skipping
+psql:db/migrations/001_esquema.sql:22: NOTICE:  table "cliente" does not exist, skipping
+psql:db/migrations/001_esquema.sql:23: NOTICE:  table "vino_maridaje" does not exist, skipping
+psql:db/migrations/001_esquema.sql:24: NOTICE:  table "maridaje" does not exist, skipping
+psql:db/migrations/001_esquema.sql:25: NOTICE:  table "composicion" does not exist, skipping
+psql:db/migrations/001_esquema.sql:26: NOTICE:  table "vino" does not exist, skipping
+psql:db/migrations/001_esquema.sql:27: NOTICE:  table "bodega" does not exist, skipping
+psql:db/migrations/001_esquema.sql:28: NOTICE:  table "analisis_calidad" does not exist, skipping
+psql:db/migrations/001_esquema.sql:29: NOTICE:  table "lote_uva" does not exist, skipping
+psql:db/migrations/001_esquema.sql:30: NOTICE:  table "parcela" does not exist, skipping
+psql:db/migrations/001_esquema.sql:31: NOTICE:  table "cepa" does not exist, skipping
+psql:db/migrations/001_esquema.sql:32: NOTICE:  table "finca" does not exist, skipping
+psql:db/migrations/001_esquema.sql:33: NOTICE:  table "empleado" does not exist, skipping
+psql:db/migrations/001_esquema.sql:34: NOTICE:  table "sala_venta" does not exist, skipping
+psql:db/migrations/001_esquema.sql:35: NOTICE:  table "localidad" does not exist, skipping

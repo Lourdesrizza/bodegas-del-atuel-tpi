@@ -1,0 +1,6 @@
+CREATE VIEW
+CREATE VIEW
+DROP MATERIALIZED VIEW
+SELECT 0
+CREATE INDEX
+psql:db/migrations/006_vistas.sql:79: NOTICE:  materialized view "mv_ventas_mensuales_sala" does not exist, skipping

@@ -1,0 +1,8 @@
+PostgreSQL 16.15; base nueva: atuel_pg16_small_20261029_test
+001_esquema.sql: OK
+002_constraints.sql: OK
+003_funciones.sql: OK
+004_procedimientos.sql: OK
+005_triggers.sql: OK
+006_vistas.sql: OK
+007_roles.sql: OK

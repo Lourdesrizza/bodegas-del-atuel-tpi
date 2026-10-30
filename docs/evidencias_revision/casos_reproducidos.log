@@ -1,0 +1,96 @@
+Pager usage is off.
+BEGIN
+UPDATE 1
+        hallazgo        | tipo_cliente | descuento 
+------------------------+--------------+-----------
+ RN06: socio acepta 30% | socio        |     30.00
+(1 row)
+
+ROLLBACK
+BEGIN
+INSERT 0 1
+                  hallazgo                   | es_socio | es_exportador 
+---------------------------------------------+----------+---------------
+ Jerarquia: mismo cliente socio y exportador | t        | t
+(1 row)
+
+ROLLBACK
+BEGIN
+UPDATE 1
+      hallazgo      | total 
+--------------------+-------
+ RN08: total manual |  1.00
+(1 row)
+
+ROLLBACK
+BEGIN
+UPDATE 1
+                    hallazgo                     | cantidad | stock |  total   
+-------------------------------------------------+----------+-------+----------
+ RN08/09: UPDATE no descuenta stock ni recalcula |    10000 |    36 | 45000.00
+(1 row)
+
+ROLLBACK
+BEGIN
+INSERT 0 1
+INSERT 0 1
+             hallazgo             | precio_unitario | catalogo 
+----------------------------------+-----------------+----------
+ RN01: precio arbitrario aceptado |            0.01 | 13900.00
+(1 row)
+
+ROLLBACK
+BEGIN
+INSERT 0 1
+UPDATE 1
+                    hallazgo                     |  estado   
+-------------------------------------------------+-----------
+ RN10: procesado sin procedimiento ni movimiento | procesado
+(1 row)
+
+ROLLBACK
+BEGIN
+INSERT 0 1
+UPDATE 1
+                   hallazgo                   | renglones_originales 
+----------------------------------------------+----------------------
+ RN12: se retiro renglon de ingreso procesado |                    0
+(1 row)
+
+ROLLBACK
+BEGIN
+INSERT 0 1
+SET CONSTRAINTS
+                  hallazgo                  | componentes 
+--------------------------------------------+-------------
+ RN05: vino sin composicion pasa validacion |           0
+(1 row)
+
+ROLLBACK
+BEGIN
+UPDATE 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+                   hallazgo                   | total | suma_renglones 
+----------------------------------------------+-------+----------------
+ RN08: redondeo cabecera difiere de renglones |  0.09 |           0.10
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+              hallazgo              | puede_avanzar_secuencia 
+------------------------------------+-------------------------
+ Rol lectura puede ejecutar nextval | t
+(1 row)
+
+ROLLBACK
+BEGIN
+CREATE FUNCTION
+                 hallazgo                 | lectura_puede_ejecutar 
+------------------------------------------+------------------------
+ Futuras funciones ejecutables por PUBLIC | t
+(1 row)
+
+ROLLBACK

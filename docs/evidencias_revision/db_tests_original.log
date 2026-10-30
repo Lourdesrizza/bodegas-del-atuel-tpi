@@ -1,0 +1,25 @@
+psql:tests/db_tests.sql:100: NOTICE:  ============================================================
+psql:tests/db_tests.sql:100: NOTICE:  INICIANDO BATERÍA DE PRUEBAS DE INTEGRIDAD (RN-01 A RN-15)
+psql:tests/db_tests.sql:100: NOTICE:  ============================================================
+psql:tests/db_tests.sql:114: NOTICE:  [OK] RN-01: Rechazado vino con precio <= 0 (check_violation).
+psql:tests/db_tests.sql:129: NOTICE:  [OK] RN-02: Rechazada sala vinculada a localidad inexistente (foreign_key_violation).
+psql:tests/db_tests.sql:143: NOTICE:  [OK] RN-03: Rechazado empleado sin sala asociada (not_null_violation).
+psql:tests/db_tests.sql:161: NOTICE:  [OK] RN-04: Rechazada segunda cosecha en misma parcela y campaña (unique_violation).
+psql:tests/db_tests.sql:181: NOTICE:  [OK] RN-05: Rechazada composición con suma distinta de 100% (Trigger diferido).
+psql:tests/db_tests.sql:201: NOTICE:  [OK] RN-06: fn_descuento_cliente devolvió los descuentos exactos (10%, 20% y 30%).
+psql:tests/db_tests.sql:215: NOTICE:  [OK] RN-07: Rechazado permiso con fecha de vencimiento incoherente (check_violation).
+psql:tests/db_tests.sql:265: NOTICE:  [OK] RN-09: Rechazada venta por stock insuficiente en sala (Trigger BEFORE).
+psql:tests/db_tests.sql:265: NOTICE:  [OK] RN-08 y RN-09: Venta exitosa descontó stock (quedan 6) y totalizó $45.000 con descuento.
+psql:tests/db_tests.sql:304: NOTICE:  [OK] RN-10: Procedimiento rechazó procesar ingreso que no estaba terminado.
+psql:tests/db_tests.sql:304: NOTICE:  Ingreso 1 procesado exitosamente.
+psql:tests/db_tests.sql:304: NOTICE:  [OK] RN-10: Rechazado retroceso de estado en ingreso procesado.
+psql:tests/db_tests.sql:333: NOTICE:  [OK] RN-11: Rechazada alteración de fecha_confeccion (Trigger BEFORE).
+psql:tests/db_tests.sql:333: NOTICE:  Transferencia 1 procesada exitosamente para la sala 1.
+psql:tests/db_tests.sql:333: NOTICE:  [OK] RN-11: Transferencia impactó existencias entre depósito y sala.
+psql:tests/db_tests.sql:355: NOTICE:  [OK] RN-12: Bloqueada adición de renglones a documento que no está en confección.
+psql:tests/db_tests.sql:373: NOTICE:  [OK] RN-13: Auditoría registró cambio de precio de $12.500 a $13.900.
+psql:tests/db_tests.sql:386: NOTICE:  [OK] RN-14: Rechazado borrado de vino con movimientos por ON DELETE RESTRICT.
+psql:tests/db_tests.sql:400: NOTICE:  [OK] RN-15: Rechazada graduación fuera del rango 5° - 20° (check_violation).
+psql:tests/db_tests.sql:407: NOTICE:  ============================================================
+psql:tests/db_tests.sql:407: NOTICE:  BATERÍA DE PRUEBAS FINALIZADA CON ÉXITO: 100% DE COBERTURA
+psql:tests/db_tests.sql:407: NOTICE:  ============================================================

@@ -1,0 +1,3 @@
+triggers [('trg_descuenta_stock_actualiza_totales', 'O'), ('trg_fecha_transferencia', 'O'), ('trg_valida_stock_renglon', 'O')]
+alteracion_detectada [('stock_sala', 1)]
+rollback=OK

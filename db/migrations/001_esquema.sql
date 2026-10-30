@@ -3,36 +3,11 @@
 -- ETAPA 1: Esquema Físico Base (001_esquema.sql)
 -- ============================================================================
 
--- Limpieza preventiva en orden inverso de dependencias
-DROP TABLE IF EXISTS auditoria_precio CASCADE;
-DROP TABLE IF EXISTS renglon_comprobante CASCADE;
-DROP TABLE IF EXISTS comprobante CASCADE;
-DROP TABLE IF EXISTS renglon_transferencia CASCADE;
-DROP TABLE IF EXISTS transferencia CASCADE;
-DROP TABLE IF EXISTS renglon_ingreso CASCADE;
-DROP TABLE IF EXISTS ingreso CASCADE;
-DROP TABLE IF EXISTS stock_sala CASCADE;
-DROP TABLE IF EXISTS stock_deposito CASCADE;
-DROP TABLE IF EXISTS transportista_localidad CASCADE;
-DROP TABLE IF EXISTS transportista CASCADE;
-DROP TABLE IF EXISTS permiso_exportacion CASCADE;
-DROP TABLE IF EXISTS exportador CASCADE;
-DROP TABLE IF EXISTS distribuidor CASCADE;
-DROP TABLE IF EXISTS socio CASCADE;
-DROP TABLE IF EXISTS cliente CASCADE;
-DROP TABLE IF EXISTS vino_maridaje CASCADE;
-DROP TABLE IF EXISTS maridaje CASCADE;
-DROP TABLE IF EXISTS composicion CASCADE;
-DROP TABLE IF EXISTS vino CASCADE;
-DROP TABLE IF EXISTS bodega CASCADE;
-DROP TABLE IF EXISTS analisis_calidad CASCADE;
-DROP TABLE IF EXISTS lote_uva CASCADE;
-DROP TABLE IF EXISTS parcela CASCADE;
-DROP TABLE IF EXISTS cepa CASCADE;
-DROP TABLE IF EXISTS finca CASCADE;
-DROP TABLE IF EXISTS empleado CASCADE;
-DROP TABLE IF EXISTS sala_venta CASCADE;
-DROP TABLE IF EXISTS localidad CASCADE;
+-- Migración de creación: ejecutar sólo en una base nueva y exclusiva.
+-- No borra tablas preexistentes.
+
+CREATE TYPE estado_documento AS ENUM ('en_confeccion', 'terminado', 'procesado');
+CREATE DOMAIN cuit_dom AS CHAR(11) CHECK (VALUE ~ '^[0-9]{11}$');
 
 -- ----------------------------------------------------------------------------
 -- 1. LOCALIZACIÓN, SALAS Y PERSONAL
@@ -55,7 +30,7 @@ CREATE TABLE sala_venta (
 );
 
 CREATE TABLE empleado (
-    cuit CHAR(11) PRIMARY KEY,
+    cuit cuit_dom PRIMARY KEY,
     id_sala INTEGER NOT NULL REFERENCES sala_venta(id_sala),
     nombre VARCHAR(150) NOT NULL,
     fecha_ingreso DATE NOT NULL,
@@ -90,7 +65,7 @@ CREATE TABLE parcela (
 );
 
 CREATE TABLE bodega (
-    cuit CHAR(11) PRIMARY KEY,
+    cuit cuit_dom PRIMARY KEY,
     razon_social VARCHAR(150) NOT NULL,
     domicilio VARCHAR(200) NOT NULL
 );
@@ -99,7 +74,7 @@ CREATE TABLE lote_uva (
     nro_lote SERIAL PRIMARY KEY,
     id_finca INTEGER NOT NULL,
     nro_parcela INTEGER NOT NULL,
-    cuit_bodega CHAR(11) NOT NULL REFERENCES bodega(cuit),
+    cuit_bodega cuit_dom NOT NULL REFERENCES bodega(cuit),
     campania SMALLINT NOT NULL,
     fecha_cosecha DATE NOT NULL,
     kilos NUMERIC(10, 2) NOT NULL,
@@ -121,7 +96,7 @@ CREATE TABLE analisis_calidad (
 
 CREATE TABLE vino (
     cod_vino SERIAL PRIMARY KEY,
-    cuit_bodega CHAR(11) NOT NULL REFERENCES bodega(cuit),
+    cuit_bodega cuit_dom NOT NULL REFERENCES bodega(cuit),
     nombre VARCHAR(120) NOT NULL,
     tipo VARCHAR(30) NOT NULL,
     anada SMALLINT NOT NULL,
@@ -153,6 +128,15 @@ CREATE TABLE vino_maridaje (
 -- 4. CLIENTES Y ESTRUCTURA DE SUBTIPOS
 -- ----------------------------------------------------------------------------
 
+CREATE TABLE tipo_cliente (
+    tipo_cliente VARCHAR(30) PRIMARY KEY,
+    descuento NUMERIC(5, 2) NOT NULL CHECK (
+      (tipo_cliente='socio' AND descuento=10) OR
+      (tipo_cliente='distribuidor' AND descuento=20) OR
+      (tipo_cliente='exportador' AND descuento=30))
+);
+INSERT INTO tipo_cliente VALUES ('socio', 10), ('distribuidor', 20), ('exportador', 30);
+
 CREATE TABLE cliente (
     id_cliente SERIAL PRIMARY KEY,
     id_localidad INTEGER NOT NULL REFERENCES localidad(id_localidad),
@@ -161,8 +145,7 @@ CREATE TABLE cliente (
     numero_doc VARCHAR(30) NOT NULL,
     domicilio VARCHAR(200) NOT NULL,
     fecha_alta DATE NOT NULL,
-    tipo_cliente VARCHAR(30) NOT NULL,
-    descuento NUMERIC(5, 2) NOT NULL
+    tipo_cliente VARCHAR(30) NOT NULL REFERENCES tipo_cliente(tipo_cliente)
 );
 
 CREATE TABLE socio (
@@ -193,7 +176,7 @@ CREATE TABLE permiso_exportacion (
 
 CREATE TABLE transportista (
     cod_transportista SERIAL PRIMARY KEY,
-    cuit CHAR(11) NOT NULL,
+    cuit cuit_dom NOT NULL,
     razon_social VARCHAR(150) NOT NULL,
     domicilio VARCHAR(200) NOT NULL,
     email VARCHAR(120) NOT NULL,
@@ -224,10 +207,10 @@ CREATE TABLE stock_sala (
 
 CREATE TABLE ingreso (
     cod_ingreso SERIAL PRIMARY KEY,
-    cuit_bodega CHAR(11) NOT NULL REFERENCES bodega(cuit),
+    cuit_bodega cuit_dom NOT NULL REFERENCES bodega(cuit),
     cod_transportista INTEGER NOT NULL REFERENCES transportista(cod_transportista),
     fecha DATE NOT NULL,
-    estado VARCHAR(30) NOT NULL
+    estado estado_documento NOT NULL DEFAULT 'en_confeccion'
 );
 
 CREATE TABLE renglon_ingreso (
@@ -241,7 +224,7 @@ CREATE TABLE transferencia (
     nro_solicitud SERIAL PRIMARY KEY,
     id_sala INTEGER NOT NULL REFERENCES sala_venta(id_sala),
     fecha_confeccion DATE NOT NULL,
-    estado VARCHAR(30) NOT NULL
+    estado estado_documento NOT NULL DEFAULT 'en_confeccion'
 );
 
 CREATE TABLE renglon_transferencia (

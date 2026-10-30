@@ -1,0 +1,10 @@
+DO
+DO
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:db/migrations/002_constraints.sql:45: ERROR:  column "estado_documento" does not exist
+LINE 3: ...  ALTER COLUMN estado TYPE estado_documento USING estado_doc...
+                                                             ^

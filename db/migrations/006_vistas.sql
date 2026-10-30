@@ -76,8 +76,6 @@ GROUP BY tr.nro_solicitud, tr.fecha_confeccion, tr.estado, s.id_sala, l.nombre;
 -- Propósito: Agrupa el volumen de comprobantes emitidos y montos facturados
 --            por sala y período mensual. Acelera consultas de reportes.
 -- ----------------------------------------------------------------------------
-DROP MATERIALIZED VIEW IF EXISTS mv_ventas_mensuales_sala CASCADE;
-
 CREATE MATERIALIZED VIEW mv_ventas_mensuales_sala AS
 SELECT 
     c.id_sala,
