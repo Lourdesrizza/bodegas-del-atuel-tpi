@@ -41,7 +41,7 @@ BEGIN
     WHERE cod_vino = NEW.cod_vino;
 
     -- Fijar el precio histórico al momento de la venta
-    NEW.precio_unitario := COALESCE(NEW.precio_unitario, v_precio_actual);
+    NEW.precio_unitario := v_precio_actual;
 
     -- RN-06: Asignar descuento según tipo de cliente
     v_descuento_pct := fn_descuento_cliente(v_cliente);
@@ -350,7 +350,7 @@ BEGIN
         WHERE cod_vino = v_cod_vino;
 
         IF v_suma <> 100.00 THEN
-            RAISE EXCEPTION 'La composición del vino % suma % %, pero debe sumar exactamente 100 %% (RN-05)',
+            RAISE EXCEPTION 'La composición del vino % suma %, pero debe sumar exactamente 100 %% (RN-05)',
                 v_cod_vino, v_suma;
         END IF;
     END IF;
@@ -365,3 +365,172 @@ AFTER INSERT OR UPDATE OR DELETE ON composicion
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION trg_fn_validar_porcentaje_corte();
+
+-- Cierre de brechas detectadas en la revisión.
+CREATE OR REPLACE FUNCTION trg_fn_cliente_subtipo() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_tipo text; v_n integer;
+BEGIN
+  v_id := CASE WHEN TG_TABLE_NAME = 'cliente' THEN COALESCE(NEW.id_cliente, OLD.id_cliente)
+               ELSE COALESCE(NEW.id_cliente, OLD.id_cliente) END;
+  SELECT tipo_cliente INTO v_tipo FROM cliente WHERE id_cliente = v_id;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT (EXISTS(SELECT 1 FROM socio WHERE id_cliente=v_id))::int +
+         (EXISTS(SELECT 1 FROM distribuidor WHERE id_cliente=v_id))::int +
+         (EXISTS(SELECT 1 FROM exportador WHERE id_cliente=v_id))::int INTO v_n;
+  IF v_n <> 1 OR NOT (
+      (v_tipo='socio' AND EXISTS(SELECT 1 FROM socio WHERE id_cliente=v_id)) OR
+      (v_tipo='distribuidor' AND EXISTS(SELECT 1 FROM distribuidor WHERE id_cliente=v_id)) OR
+      (v_tipo='exportador' AND EXISTS(SELECT 1 FROM exportador WHERE id_cliente=v_id))) THEN
+    RAISE EXCEPTION 'Cliente %: subtipo ausente o incompatible (RN-06)', v_id;
+  END IF;
+  RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER trg_cliente_subtipo AFTER INSERT OR UPDATE OR DELETE ON cliente
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+CREATE CONSTRAINT TRIGGER trg_socio_subtipo AFTER INSERT OR UPDATE OR DELETE ON socio
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+CREATE CONSTRAINT TRIGGER trg_distribuidor_subtipo AFTER INSERT OR UPDATE OR DELETE ON distribuidor
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+CREATE CONSTRAINT TRIGGER trg_exportador_subtipo AFTER INSERT OR UPDATE OR DELETE ON exportador
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+
+CREATE OR REPLACE FUNCTION trg_fn_comprobante_inmutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND pg_trigger_depth() > 1 AND
+     ROW(NEW.nro_comprobante,NEW.id_cliente,NEW.id_sala,NEW.fecha) IS NOT DISTINCT FROM
+     ROW(OLD.nro_comprobante,OLD.id_cliente,OLD.id_sala,OLD.fecha) THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'Comprobante emitido inmutable (RN-08)';
+END $$;
+CREATE TRIGGER trg_comprobante_inmutable BEFORE UPDATE OR DELETE ON comprobante
+FOR EACH ROW EXECUTE FUNCTION trg_fn_comprobante_inmutable();
+CREATE OR REPLACE FUNCTION trg_fn_renglon_venta_inmutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'Renglón de venta emitido inmutable (RN-08/09)'; END $$;
+CREATE TRIGGER trg_renglon_venta_inmutable BEFORE UPDATE OR DELETE ON renglon_comprobante
+FOR EACH ROW EXECUTE FUNCTION trg_fn_renglon_venta_inmutable();
+
+-- Bloqueo de cabecera durante el alta de renglones; serializa las ventas del mismo comprobante.
+CREATE OR REPLACE FUNCTION trg_fn_validar_renglon_venta() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_sala integer; v_cliente integer; v_precio numeric(10,2); v_desc numeric(5,2);
+BEGIN
+  SELECT id_sala,id_cliente INTO v_sala,v_cliente FROM comprobante
+  WHERE nro_comprobante=NEW.nro_comprobante FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Comprobante % inexistente',NEW.nro_comprobante; END IF;
+  SELECT precio INTO v_precio FROM vino WHERE cod_vino=NEW.cod_vino;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Vino % inexistente',NEW.cod_vino; END IF;
+  v_desc := fn_descuento_cliente(v_cliente);
+  NEW.precio_unitario := v_precio;
+  NEW.descuento_aplicado := v_desc;
+  NEW.subtotal_renglon := ROUND(NEW.cantidad*v_precio*(1-v_desc/100),2);
+  -- UPDATE atómico: la segunda sesión espera y luego observa el stock vigente.
+  UPDATE stock_sala SET cantidad=cantidad-NEW.cantidad
+  WHERE id_sala=v_sala AND cod_vino=NEW.cod_vino AND cantidad>=NEW.cantidad;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Stock insuficiente en sala para vino % (RN-09)',NEW.cod_vino; END IF;
+  RETURN NEW;
+END $$;
+-- El descuento se realiza en BEFORE INSERT; AFTER INSERT solo recalcula.
+CREATE OR REPLACE FUNCTION trg_fn_actualizar_stock_totales_venta() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_totales record;
+BEGIN
+  SELECT * INTO v_totales FROM fn_total_comprobante(NEW.nro_comprobante);
+  UPDATE comprobante SET subtotal=v_totales.subtotal, descuento=v_totales.descuento,
+    total=v_totales.total WHERE nro_comprobante=NEW.nro_comprobante;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_ingreso() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_estado estado_documento;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.cod_ingreso END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.cod_ingreso END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    SELECT estado INTO v_estado FROM ingreso WHERE cod_ingreso=v_id FOR UPDATE;
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+      RAISE EXCEPTION 'Ingreso % cerrado: renglón inmutable (RN-12)',v_id;
+    END IF;
+  END LOOP;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_transferencia() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_estado estado_documento;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.nro_solicitud END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.nro_solicitud END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    SELECT estado INTO v_estado FROM transferencia WHERE nro_solicitud=v_id FOR UPDATE;
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+      RAISE EXCEPTION 'Transferencia % cerrada: renglón inmutable (RN-12)',v_id;
+    END IF;
+  END LOOP;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+
+-- El ingreso sólo puede contener vinos elaborados por su bodega de origen.
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_ingreso() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_estado estado_documento;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.cod_ingreso END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.cod_ingreso END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    SELECT estado INTO v_estado FROM ingreso WHERE cod_ingreso=v_id FOR UPDATE;
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+      RAISE EXCEPTION 'Ingreso % cerrado: renglón inmutable (RN-12)',v_id;
+    END IF;
+  END LOOP;
+  IF TG_OP<>'DELETE' AND NOT EXISTS (
+    SELECT 1 FROM ingreso i JOIN vino v ON v.cuit_bodega=i.cuit_bodega
+    WHERE i.cod_ingreso=NEW.cod_ingreso AND v.cod_vino=NEW.cod_vino) THEN
+    RAISE EXCEPTION 'El vino no pertenece a la bodega del ingreso';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+
+-- Procesado se reserva a procedimientos; el rol API no recibe UPDATE de cabeceras.
+CREATE OR REPLACE FUNCTION trg_fn_control_estados_ingreso() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.estado='en_confeccion' AND NEW.estado='terminado' THEN RETURN NEW; END IF;
+  IF OLD.estado='terminado' AND NEW.estado='procesado' AND pg_trigger_depth()>0
+     AND current_user='app_owner' THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'Transición inválida de ingreso (RN-10)';
+END $$;
+CREATE OR REPLACE FUNCTION trg_fn_control_estados_transferencia() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.estado='en_confeccion' AND NEW.estado='terminado' THEN RETURN NEW; END IF;
+  IF OLD.estado='terminado' AND NEW.estado='procesado' AND current_user='app_owner' THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'Transición inválida de transferencia (RN-11)';
+END $$;
+CREATE OR REPLACE FUNCTION trg_fn_estado_inicial() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.estado <> 'en_confeccion' THEN RAISE EXCEPTION 'Estado inicial debe ser en_confeccion'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_ingreso_inicial BEFORE INSERT ON ingreso FOR EACH ROW EXECUTE FUNCTION trg_fn_estado_inicial();
+CREATE TRIGGER trg_transferencia_inicial BEFORE INSERT ON transferencia FOR EACH ROW EXECUTE FUNCTION trg_fn_estado_inicial();
+
+CREATE OR REPLACE FUNCTION trg_fn_validar_porcentaje_corte() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_suma numeric;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.cod_vino END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.cod_vino END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    IF EXISTS(SELECT 1 FROM vino WHERE cod_vino=v_id) THEN
+      SELECT COALESCE(SUM(porcentaje),0) INTO v_suma FROM composicion WHERE cod_vino=v_id;
+      IF v_suma<>100 THEN RAISE EXCEPTION 'Corte del vino % suma %; debe sumar 100 %% (RN-05)',v_id,v_suma; END IF;
+    END IF;
+  END LOOP;
+  RETURN NULL;
+END $$;
+CREATE OR REPLACE FUNCTION trg_fn_validar_vino_composicion() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_suma numeric;
+BEGIN
+  IF EXISTS(SELECT 1 FROM vino WHERE cod_vino=NEW.cod_vino) THEN
+    SELECT COALESCE(SUM(porcentaje),0) INTO v_suma FROM composicion WHERE cod_vino=NEW.cod_vino;
+    IF v_suma<>100 THEN RAISE EXCEPTION 'Corte del vino % suma %; debe sumar 100 %% (RN-05)',NEW.cod_vino,v_suma; END IF;
+  END IF;
+  RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER trg_vino_tiene_composicion AFTER INSERT OR UPDATE ON vino
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_validar_vino_composicion();

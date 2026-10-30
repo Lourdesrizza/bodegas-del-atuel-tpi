@@ -1,0 +1,17 @@
+Base exclusiva: atuel_cierre_validacion_test
+PostgreSQL: 18.1
+ON_ERROR_STOP=1
+db\migrations\001_esquema.sql: OK (exit=0)
+db\migrations\002_constraints.sql: OK (exit=0)
+db\migrations\003_funciones.sql: OK (exit=0)
+db\migrations\004_procedimientos.sql: OK (exit=0)
+db\migrations\005_triggers.sql: OK (exit=0)
+db\migrations\006_vistas.sql: OK (exit=0)
+db\migrations\007_roles.sql: OK (exit=0)
+tests\db_tests.sql: FALLO (exit=3)
+psql:D:/DATOS DISCO D/INGENIERIA/3er/BD/bodegas-del-atuel-tpi/proyecto/tests/etapas_1_2_regresion.sql:100: NOTICE:  Ingreso 1 procesado exitosamente.
+psql:D:/DATOS DISCO D/INGENIERIA/3er/BD/bodegas-del-atuel-tpi/proyecto/tests/etapas_1_2_regresion.sql:107: NOTICE:  Transferencia 1 procesada exitosamente para la sala 1.
+psql:D:/DATOS DISCO D/INGENIERIA/3er/BD/bodegas-del-atuel-tpi/proyecto/tests/etapas_1_2_regresion.sql:199: ERROR:  update or delete on table "bodega" violates RESTRICT setting of foreign key constraint "fk_vino_bodega" on table "vino"
+DETAIL:  Key (cuit)=(30708090101) is referenced from table "vino".
+CONTEXT:  sentencia SQL: «DELETE FROM bodega WHERE cuit='30708090101'»
+función PL/pgSQL inline_code_block en la línea 6 en sentencia SQL

@@ -17,6 +17,7 @@ AS $$
 DECLARE
     v_estado estado_documento;
     v_cant_renglones INTEGER;
+    r RECORD;
 BEGIN
     -- 1. Bloqueo pesimista de la fila del ingreso para evitar procesamiento concurrente
     SELECT estado INTO v_estado
@@ -44,12 +45,11 @@ BEGIN
     END IF;
 
     -- 4. Incrementar el stock del depósito central (crea la fila si no existía)
-    INSERT INTO stock_deposito (cod_vino, cantidad)
-    SELECT r.cod_vino, r.cantidad
-    FROM renglon_ingreso r
-    WHERE r.cod_ingreso = p_cod_ingreso
-    ON CONFLICT (cod_vino)
-    DO UPDATE SET cantidad = stock_deposito.cantidad + EXCLUDED.cantidad;
+    FOR r IN SELECT cod_vino,cantidad FROM renglon_ingreso
+             WHERE cod_ingreso=p_cod_ingreso ORDER BY cod_vino LOOP
+      INSERT INTO stock_deposito(cod_vino,cantidad) VALUES(r.cod_vino,r.cantidad)
+      ON CONFLICT(cod_vino) DO UPDATE SET cantidad=stock_deposito.cantidad+EXCLUDED.cantidad;
+    END LOOP;
 
     -- 5. Transición definitiva de estado
     UPDATE ingreso
@@ -109,6 +109,7 @@ BEGIN
         SELECT cod_vino, cantidad
         FROM renglon_transferencia
         WHERE nro_solicitud = p_nro_solicitud
+        ORDER BY cod_vino
     ) LOOP
         SELECT cantidad INTO v_stock_deposito_actual
         FROM stock_deposito
@@ -122,19 +123,12 @@ BEGIN
     END LOOP;
 
     -- 5. Descontar botellas de stock_deposito (usando alias rt)
-    UPDATE stock_deposito d
-    SET cantidad = d.cantidad - rt.cantidad
-    FROM renglon_transferencia rt
-    WHERE rt.nro_solicitud = p_nro_solicitud
-      AND d.cod_vino = rt.cod_vino;
-
-    -- 6. Sumar botellas a stock_sala (usando alias rt)
-    INSERT INTO stock_sala (id_sala, cod_vino, cantidad)
-    SELECT v_id_sala, rt.cod_vino, rt.cantidad
-    FROM renglon_transferencia rt
-    WHERE rt.nro_solicitud = p_nro_solicitud
-    ON CONFLICT (id_sala, cod_vino)
-    DO UPDATE SET cantidad = stock_sala.cantidad + EXCLUDED.cantidad;
+    FOR r IN SELECT cod_vino,cantidad FROM renglon_transferencia
+             WHERE nro_solicitud=p_nro_solicitud ORDER BY cod_vino LOOP
+      UPDATE stock_deposito SET cantidad=cantidad-r.cantidad WHERE cod_vino=r.cod_vino;
+      INSERT INTO stock_sala(id_sala,cod_vino,cantidad) VALUES(v_id_sala,r.cod_vino,r.cantidad)
+      ON CONFLICT(id_sala,cod_vino) DO UPDATE SET cantidad=stock_sala.cantidad+EXCLUDED.cantidad;
+    END LOOP;
 
     -- 7. Transición definitiva de estado
     UPDATE transferencia
@@ -144,3 +138,14 @@ BEGIN
     RAISE NOTICE 'Transferencia % procesada exitosamente para la sala %.', p_nro_solicitud, v_id_sala;
 END;
 $$;
+
+CREATE OR REPLACE PROCEDURE sp_terminar_ingreso(p_id integer) LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE ingreso SET estado='terminado' WHERE cod_ingreso=p_id AND estado='en_confeccion';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Ingreso inexistente o no está en confección'; END IF;
+END $$;
+CREATE OR REPLACE PROCEDURE sp_terminar_transferencia(p_id integer) LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE transferencia SET estado='terminado' WHERE nro_solicitud=p_id AND estado='en_confeccion';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Transferencia inexistente o no está en confección'; END IF;
+END $$;

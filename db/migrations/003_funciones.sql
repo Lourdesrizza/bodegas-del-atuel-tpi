@@ -18,9 +18,9 @@ AS $$
 DECLARE
     v_descuento NUMERIC(5, 2);
 BEGIN
-    SELECT descuento INTO v_descuento
-    FROM cliente
-    WHERE id_cliente = p_id_cliente;
+    SELECT t.descuento INTO v_descuento
+    FROM cliente c JOIN tipo_cliente t USING (tipo_cliente)
+    WHERE c.id_cliente = p_id_cliente;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'El cliente con ID % no existe (RN-06)', p_id_cliente;
@@ -88,33 +88,23 @@ LANGUAGE plpgsql
 STABLE
 AS $$
 DECLARE
-    v_id_cliente INTEGER;
-    v_descuento_pct NUMERIC(5, 2);
     v_subtotal_bruto NUMERIC(12, 2);
     v_monto_descuento NUMERIC(12, 2);
     v_total_neto NUMERIC(12, 2);
 BEGIN
-    -- Obtener cliente asociado al comprobante
-    SELECT id_cliente INTO v_id_cliente
-    FROM comprobante
-    WHERE nro_comprobante = p_nro_comprobante;
-
-    IF NOT FOUND THEN
+    IF NOT EXISTS (SELECT 1 FROM comprobante WHERE nro_comprobante = p_nro_comprobante) THEN
         RAISE EXCEPTION 'El comprobante % no existe', p_nro_comprobante;
     END IF;
 
-    -- Obtener porcentaje de descuento del cliente (RN-06)
-    v_descuento_pct := fn_descuento_cliente(v_id_cliente);
-
     -- Sumar los importes brutos (cantidad * precio_unitario) de los renglones
-    SELECT COALESCE(SUM(r.cantidad * r.precio_unitario), 0.00)
-    INTO v_subtotal_bruto
+    SELECT COALESCE(SUM(r.cantidad * r.precio_unitario), 0.00),
+           COALESCE(SUM(r.cantidad * r.precio_unitario - r.subtotal_renglon), 0.00),
+           COALESCE(SUM(r.subtotal_renglon), 0.00)
+    INTO v_subtotal_bruto, v_monto_descuento, v_total_neto
     FROM renglon_comprobante r
     WHERE r.nro_comprobante = p_nro_comprobante;
 
-    -- Calcular descuentos e importes finales redondeados a 2 decimales
-    v_monto_descuento := ROUND(v_subtotal_bruto * (v_descuento_pct / 100.0), 2);
-    v_total_neto := v_subtotal_bruto - v_monto_descuento;
+    -- La suma de netos redondeados por renglón es la fuente de verdad.
 
     RETURN QUERY SELECT v_subtotal_bruto, v_monto_descuento, v_total_neto;
 END;

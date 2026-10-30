@@ -6,46 +6,7 @@
 -- ----------------------------------------------------------------------------
 -- 1. TIPOS PROPIOS Y DOMINIOS
 -- ----------------------------------------------------------------------------
-
--- Tipo ENUM para estados de documentos (ingresos y transferencias)
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_documento') THEN
-        CREATE TYPE estado_documento AS ENUM ('en_confeccion', 'terminado', 'procesado');
-    END IF;
-END $$;
-
--- Dominio para CUIT: longitud fija de 11 dígitos numéricos
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'cuit_dom') THEN
-        CREATE DOMAIN cuit_dom AS CHAR(11)
-        CHECK (VALUE ~ '^[0-9]{11}$');
-    END IF;
-END $$;
-
--- Aplicación de los tipos propios a las tablas base
-ALTER TABLE bodega 
-    ALTER COLUMN cuit TYPE cuit_dom;
-
-ALTER TABLE empleado 
-    ALTER COLUMN cuit TYPE cuit_dom;
-
-ALTER TABLE transportista 
-    ALTER COLUMN cuit TYPE cuit_dom;
-
-ALTER TABLE lote_uva 
-    ALTER COLUMN cuit_bodega TYPE cuit_dom;
-
-ALTER TABLE vino 
-    ALTER COLUMN cuit_bodega TYPE cuit_dom;
-
-ALTER TABLE ingreso 
-    ALTER COLUMN cuit_bodega TYPE cuit_dom,
-    ALTER COLUMN estado TYPE estado_documento USING estado_documento::estado_documento;
-
-ALTER TABLE transferencia 
-    ALTER COLUMN estado TYPE estado_documento USING estado_documento::estado_documento;
+-- Se crean antes de las tablas en 001. No se repiten conversiones.
 
 -- ----------------------------------------------------------------------------
 -- 2. VALORES POR DEFECTO (DEFAULT)
@@ -160,10 +121,7 @@ ALTER TABLE analisis_calidad
     ADD CONSTRAINT ck_analisis_ph CHECK (ph BETWEEN 0.00 AND 14.00),
     ADD CONSTRAINT ck_analisis_acidez CHECK (acidez_total >= 0);
 
--- RN-06: Descuento ligado al tipo de cliente
-ALTER TABLE cliente 
-    ADD CONSTRAINT ck_cliente_tipo_valido CHECK (tipo_cliente IN ('socio', 'distribuidor', 'exportador')),
-    ADD CONSTRAINT ck_cliente_descuento_valido CHECK (descuento IN (10.00, 20.00, 30.00));
+-- RN-06: cliente referencia el catálogo tipo_cliente; descuento no se duplica.
 
 -- ----------------------------------------------------------------------------
 -- 5. ACCIONES REFERENCIALES (ON DELETE / ON UPDATE)

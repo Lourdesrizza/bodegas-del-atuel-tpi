@@ -1,0 +1,4 @@
+Base exclusiva: atuel_pg16_concurrency_20261029_test
+resultados=[0, 3]; stock=0; ventas=1
+ERROR:  Stock insuficiente en sala para vino 1 (RN-09)
+CONTEXT:  PL/pgSQL function trg_fn_validar_renglon_venta() line 16 at RAISE

@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.venv/
+.venv-seed/
+venv/
+__pycache__/
+*.pyc
+*.dump
+*.tar
+*.sql.gz

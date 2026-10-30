@@ -1,0 +1,34 @@
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+psql:db/migrations/005_triggers.sql:60: NOTICE:  trigger "trg_valida_stock_renglon" for relation "renglon_comprobante" does not exist, skipping
+psql:db/migrations/005_triggers.sql:103: NOTICE:  trigger "trg_descuenta_stock_actualiza_totales" for relation "renglon_comprobante" does not exist, skipping
+psql:db/migrations/005_triggers.sql:139: NOTICE:  trigger "trg_estado_ingreso" for relation "ingreso" does not exist, skipping
+psql:db/migrations/005_triggers.sql:175: NOTICE:  trigger "trg_estado_transferencia" for relation "transferencia" does not exist, skipping
+psql:db/migrations/005_triggers.sql:205: NOTICE:  trigger "trg_fecha_transferencia" for relation "transferencia" does not exist, skipping
+psql:db/migrations/005_triggers.sql:247: NOTICE:  trigger "trg_bloqueo_renglon_ingreso" for relation "renglon_ingreso" does not exist, skipping
+psql:db/migrations/005_triggers.sql:284: NOTICE:  trigger "trg_bloqueo_renglon_transferencia" for relation "renglon_transferencia" does not exist, skipping
+psql:db/migrations/005_triggers.sql:320: NOTICE:  trigger "trg_audita_precio_vino" for relation "vino" does not exist, skipping
+psql:db/migrations/005_triggers.sql:360: ERROR:  too few parameters specified for RAISE
+CONTEXT:  compilation of PL/pgSQL function "trg_fn_validar_porcentaje_corte" near line 19

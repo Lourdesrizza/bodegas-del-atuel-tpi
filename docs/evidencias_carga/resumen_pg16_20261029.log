@@ -1,0 +1,8 @@
+version=16.15
+clientes=20000
+comprobantes=150000
+renglones=500000
+tablas_esquema=30
+total_cabecera=1146038536.10
+total_vista=1146038536.10
+triggers_suspendidos_ahora=0
