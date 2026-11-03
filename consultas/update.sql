@@ -1,10 +1,11 @@
 -- U1 · Recalcular el total de todos los comprobantes
--- Usa el descuento histórico aplicado a los renglones. Actualiza solo diferencias. Requiere dueño de tablas.
+-- Concilia únicamente el total según RN-08 con el precio y descuento históricos.
+-- fn_total_comprobante suma importes históricos. El criterio requiere validación docente.
+-- Una diferencia en subtotal o descuento de cabecera exige otra conciliación.
 BEGIN;
 SELECT count(*) comprobantes,count(*) FILTER (WHERE c.total IS DISTINCT FROM f.total) diferencias
 FROM comprobante c CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f;
 ALTER TABLE comprobante DISABLE TRIGGER trg_comprobante_inmutable;
-ALTER TABLE renglon_comprobante DISABLE TRIGGER trg_renglon_venta_inmutable;
 WITH calculados AS (
   SELECT c.nro_comprobante,f.total FROM comprobante c
   CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f
@@ -14,7 +15,6 @@ WHERE c.nro_comprobante=x.nro_comprobante AND c.total IS DISTINCT FROM x.total;
 SELECT count(*) comprobantes,count(*) FILTER (WHERE c.total IS DISTINCT FROM f.total) diferencias
 FROM comprobante c CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f;
 ALTER TABLE comprobante ENABLE TRIGGER trg_comprobante_inmutable;
-ALTER TABLE renglon_comprobante ENABLE TRIGGER trg_renglon_venta_inmutable;
 ROLLBACK;
 
 -- U2 · Aumentar 20 % el salario con más de cinco años de antigüedad

@@ -1,0 +1,77 @@
+Inicio: 2026-11-03T20:06:32.564626-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < consultas/pruebas/u1.sql
+BEGIN;
+BEGIN
+CREATE TEMP TABLE u1_venta AS
+WITH alta AS (
+  INSERT INTO comprobante(id_cliente,id_sala) VALUES (1,1) RETURNING nro_comprobante
+) SELECT * FROM alta;
+SELECT 1
+INSERT INTO renglon_comprobante(nro_comprobante,cod_vino,cantidad)
+SELECT nro_comprobante,1,1 FROM u1_venta;
+INSERT 0 1
+CREATE TEMP TABLE u1_stock AS TABLE stock_sala;
+SELECT 3000
+CREATE TEMP TABLE u1_renglones AS
+SELECT r.* FROM renglon_comprobante r JOIN u1_venta USING(nro_comprobante);
+SELECT 1
+ALTER TABLE comprobante DISABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+UPDATE comprobante c SET total=c.total+1 FROM u1_venta v
+WHERE c.nro_comprobante=v.nro_comprobante;
+UPDATE 1
+SELECT c.total total_desajustado,f.total total_historico
+FROM comprobante c JOIN u1_venta USING(nro_comprobante)
+CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f;
+ total_desajustado | total_historico 
+-------------------+-----------------
+            908.20 |          907.20
+(1 row)
+
+WITH calculados AS (
+  SELECT c.nro_comprobante,f.total FROM comprobante c JOIN u1_venta USING(nro_comprobante)
+  CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f
+), corregidos AS (
+  UPDATE comprobante c SET total=x.total FROM calculados x
+  WHERE c.nro_comprobante=x.nro_comprobante AND c.total IS DISTINCT FROM x.total
+  RETURNING c.nro_comprobante,c.total
+)
+SELECT * INTO TEMP u1_corregidos FROM corregidos;
+SELECT 1
+ALTER TABLE comprobante ENABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+SELECT c.total total_conciliado,f.total total_historico
+FROM comprobante c JOIN u1_venta USING(nro_comprobante)
+CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f;
+ total_conciliado | total_historico 
+------------------+-----------------
+           907.20 |          907.20
+(1 row)
+
+DO $$ BEGIN
+  IF (SELECT count(*) FROM u1_corregidos)<>1
+     OR EXISTS (SELECT FROM u1_corregidos c CROSS JOIN LATERAL
+       fn_total_comprobante(c.nro_comprobante) f WHERE c.total IS DISTINCT FROM f.total)
+     OR EXISTS ((TABLE u1_stock EXCEPT TABLE stock_sala) UNION ALL (TABLE stock_sala EXCEPT TABLE u1_stock))
+     OR EXISTS ((TABLE u1_renglones EXCEPT SELECT r.* FROM renglon_comprobante r JOIN u1_venta USING(nro_comprobante))
+       UNION ALL (SELECT r.* FROM renglon_comprobante r JOIN u1_venta USING(nro_comprobante) EXCEPT TABLE u1_renglones)) THEN
+    RAISE EXCEPTION 'Falló el caso U1';
+  END IF;
+END $$;
+DO
+SELECT count(*) filas_corregidas FROM u1_corregidos;
+ filas_corregidas 
+------------------
+                1
+(1 row)
+
+SELECT tgname,tgenabled FROM pg_trigger WHERE tgname='trg_comprobante_inmutable';
+          tgname           | tgenabled 
+---------------------------+-----------
+ trg_comprobante_inmutable | O
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+Fin: 2026-11-03T20:06:34.523259-03:00 | Código: 0
