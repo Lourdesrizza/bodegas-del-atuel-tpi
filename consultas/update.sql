@@ -56,8 +56,8 @@ ROLLBACK;
 -- RN-06 fija 30 %. El catálogo es compartido. Una columna temporal por exportador
 -- permite demostrar la excepción sin subir el descuento del resto.
 BEGIN;
-ALTER TABLE tipo_cliente DROP CONSTRAINT tipo_cliente_descuento_check,
-  ADD CONSTRAINT tipo_cliente_descuento_check CHECK (
+ALTER TABLE tipo_cliente DROP CONSTRAINT tipo_cliente_check,
+  ADD CONSTRAINT tipo_cliente_check CHECK (
     (tipo_cliente='socio' AND descuento=10) OR
     (tipo_cliente='distribuidor' AND descuento=20) OR
     (tipo_cliente='exportador' AND descuento IN (30,35)));
@@ -71,4 +71,19 @@ WHERE id_cliente IN (SELECT id_cliente FROM permiso_exportacion GROUP BY id_clie
 SELECT e.descuento,count(*) exportadores
 FROM exportador e WHERE e.id_cliente IN (SELECT id_cliente FROM permiso_exportacion GROUP BY id_cliente HAVING count(*)>3)
 GROUP BY e.descuento;
+-- Demostración adicional cuando la carga no tiene exportadores elegibles.
+-- Se agregan permisos ficticios a un solo exportador y se vuelven a contar.
+INSERT INTO permiso_exportacion(cod_permiso,id_cliente,fecha_emision,fecha_vencimiento)
+SELECT 'ETAPA5-U6-' || n, e.id_cliente, CURRENT_DATE, CURRENT_DATE+365
+FROM (SELECT id_cliente FROM exportador ORDER BY id_cliente LIMIT 1) e
+CROSS JOIN generate_series(1,4) n
+WHERE NOT EXISTS (
+  SELECT FROM permiso_exportacion GROUP BY id_cliente HAVING count(*)>3
+);
+SELECT descuento,count(*) FROM exportador GROUP BY descuento ORDER BY descuento;
+UPDATE exportador SET descuento=35
+WHERE descuento<>35 AND id_cliente IN (
+  SELECT id_cliente FROM permiso_exportacion GROUP BY id_cliente HAVING count(*)>3
+);
+SELECT descuento,count(*) FROM exportador GROUP BY descuento ORDER BY descuento;
 ROLLBACK;
