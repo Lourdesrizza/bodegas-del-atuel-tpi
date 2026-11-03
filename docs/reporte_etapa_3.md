@@ -30,7 +30,7 @@ El orden físico y la razón de cada desactivación temporal de trigger están e
 | renglon_transferencia | 3.000 | comprobante | 150.000 |
 | renglon_comprobante | 500.000 | auditoria_precio | 1 |
 
-Las 30 tablas tienen filas; tres superan 10.000 y dos superan 100.000. Los mínimos de la etapa 3 se alcanzaron en PostgreSQL 18.1. La vista materializada se refrescó: suma facturada en vista y en `comprobante` = **1.146.038.536,10** en ambos casos.
+Las 30 tablas tienen filas; cuatro superan 10.000 (incluyendo socio) y dos superan 100.000. Los mínimos de la etapa 3 se alcanzaron en PostgreSQL 18.1. La vista materializada se refrescó: suma facturada en vista y en `comprobante` = **1.146.038.536,10** en ambos casos.
 
 ## Tiempos medidos
 
