@@ -1,0 +1,22 @@
+-- La ventana abarca todas las cabeceras y subtotal exige consultar la tabla.
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT sum(total),sum(subtotal) FROM comprobante
+WHERE fecha BETWEEN DATE '2025-04-01' AND DATE '2026-10-28';
+                                                                 QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=4052.83..4052.84 rows=1 width=64) (actual time=49.990..55.077 rows=1 loops=1)
+   Buffers: shared hit=1288
+   ->  Gather  (cost=4052.71..4052.82 rows=1 width=64) (actual time=49.717..55.049 rows=2 loops=1)
+         Workers Planned: 1
+         Workers Launched: 1
+         Buffers: shared hit=1288
+         ->  Partial Aggregate  (cost=3052.71..3052.72 rows=1 width=64) (actual time=44.561..44.563 rows=1 loops=2)
+               Buffers: shared hit=1288
+               ->  Parallel Seq Scan on comprobante  (cost=0.00..2611.53 rows=88235 width=12) (actual time=0.027..18.609 rows=75000 loops=2)
+                     Filter: ((fecha >= '2025-04-01'::date) AND (fecha <= '2026-10-28'::date))
+                     Buffers: shared hit=1288
+ Planning:
+   Buffers: shared hit=153 read=2
+ Planning Time: 3.052 ms
+ Execution Time: 58.036 ms
+(15 rows)
