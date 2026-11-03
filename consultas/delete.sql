@@ -31,11 +31,11 @@ SELECT count(*) FROM cepa c WHERE NOT EXISTS (SELECT FROM composicion v WHERE v.
 ROLLBACK;
 
 -- D3 · Eliminar empleados con menos de dos años de una sala dada de baja
--- Cambiar sala 1. El esquema no guarda fecha ni estado de baja.
+-- Cambiar sala 1 y fecha_baja informada externamente. El esquema no guarda la baja.
 BEGIN;
-SELECT count(*) FROM empleado WHERE id_sala=1 AND fecha_ingreso>CURRENT_DATE-interval '2 years';
-DELETE FROM empleado WHERE id_sala=1 AND fecha_ingreso>CURRENT_DATE-interval '2 years';
-SELECT count(*) FROM empleado WHERE id_sala=1 AND fecha_ingreso>CURRENT_DATE-interval '2 years';
+SELECT count(*) FROM empleado WHERE id_sala=1 AND fecha_ingreso > DATE '2026-11-03'-interval '2 years' AND fecha_ingreso <= DATE '2026-11-03';
+DELETE FROM empleado WHERE id_sala=1 AND fecha_ingreso > DATE '2026-11-03'-interval '2 years' AND fecha_ingreso <= DATE '2026-11-03';
+SELECT count(*) FROM empleado WHERE id_sala=1 AND fecha_ingreso > DATE '2026-11-03'-interval '2 years' AND fecha_ingreso <= DATE '2026-11-03';
 ROLLBACK;
 
 -- D4 · Eliminar socios sin compras y con más de cinco años de alta

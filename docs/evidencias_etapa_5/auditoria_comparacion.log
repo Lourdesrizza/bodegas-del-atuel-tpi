@@ -1,0 +1,4 @@
+Fecha: 2026-11-03T20:08:30.7952539-03:00
+Comparación ordinal de la salida SQL excluyendo encabezado de cuatro líneas y pie de ejecución.
+Comando: [string]::Equals($a,$b,[StringComparison]::Ordinal)
+Salidas idénticas: True

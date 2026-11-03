@@ -1,0 +1,39 @@
+Inicio: 2026-11-03T20:07:58.255473-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < consultas/pruebas/i1.sql
+BEGIN;
+BEGIN
+-- El código menor desempata entre transportistas sin envíos recientes.
+INSERT INTO transportista(cod_transportista,cuit,razon_social,domicilio,email,telefono)
+VALUES ((SELECT min(cod_transportista)-1 FROM transportista),'30999999051','ETAPA5 I1','Ensayo','etapa5-i1@example.invalid','000');
+INSERT 0 1
+WITH elegido AS (
+  SELECT t.cod_transportista FROM transportista t LEFT JOIN ingreso i
+  ON i.cod_transportista=t.cod_transportista
+    AND i.fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE
+  GROUP BY t.cod_transportista ORDER BY count(i.cod_ingreso),t.cod_transportista LIMIT 1
+), altas AS (
+  INSERT INTO transportista_localidad
+  SELECT t.cod_transportista,l.id_localidad FROM elegido t CROSS JOIN localidad l
+  WHERE l.nombre='General Alvear' AND l.provincia='Mendoza'
+  ON CONFLICT DO NOTHING RETURNING *
+)
+SELECT * INTO TEMP i1_altas FROM altas;
+SELECT 1
+SELECT t.razon_social,l.nombre FROM i1_altas a JOIN transportista t USING(cod_transportista)
+JOIN localidad l USING(id_localidad);
+ razon_social |     nombre     
+--------------+----------------
+ ETAPA5 I1    | General Alvear
+(1 row)
+
+DO $$ BEGIN
+  IF (SELECT count(*) FROM i1_altas)<>1 OR NOT EXISTS (
+    SELECT FROM i1_altas a JOIN transportista t USING(cod_transportista)
+    WHERE t.razon_social='ETAPA5 I1'
+  ) THEN RAISE EXCEPTION 'Falló I1'; END IF;
+END $$;
+DO
+ROLLBACK;
+ROLLBACK
+Fin: 2026-11-03T20:07:58.768800-03:00 | Código: 0

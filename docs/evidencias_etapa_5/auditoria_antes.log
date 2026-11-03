@@ -1,0 +1,136 @@
+Inicio: 2026-11-03T20:04:51.8268618-03:00
+Puerto: 0.0.0.0:55441 [::]:55441
+Base: atuel_base_test
+Comando: Get-Content -Raw docs/evidencias_etapa_5/auditoria_estado.sql | docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f -
+SELECT current_database(), current_user, version();
+ current_database | current_user |                                         version                                          
+------------------+--------------+------------------------------------------------------------------------------------------
+ atuel_base_test  | atuel_admin  | PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+(1 row)
+
+DO $$ BEGIN
+  IF current_database()<>'atuel_base_test' OR current_user<>'atuel_admin'
+     OR current_setting('server_version_num')::integer NOT BETWEEN 160000 AND 169999 THEN
+    RAISE EXCEPTION 'Base, usuario o versión de laboratorio inesperados';
+  END IF;
+END $$;
+DO
+SELECT (SELECT count(*) FROM comprobante) comprobantes,
+       (SELECT count(*) FROM renglon_comprobante) renglones;
+ comprobantes | renglones 
+--------------+-----------
+       150000 |    500000
+(1 row)
+
+SELECT tgrelid::regclass tabla,tgname,tgenabled FROM pg_trigger
+WHERE NOT tgisinternal ORDER BY 1,2;
+         tabla         |                tgname                 | tgenabled 
+-----------------------+---------------------------------------+-----------
+ vino                  | trg_audita_precio_vino                | O
+ vino                  | trg_vino_tiene_composicion            | O
+ composicion           | trg_composicion_suma_cien             | O
+ cliente               | trg_cliente_subtipo                   | O
+ socio                 | trg_socio_subtipo                     | O
+ distribuidor          | trg_distribuidor_subtipo              | O
+ exportador            | trg_exportador_subtipo                | O
+ ingreso               | trg_estado_ingreso                    | O
+ ingreso               | trg_ingreso_inicial                   | O
+ renglon_ingreso       | trg_bloqueo_renglon_ingreso           | O
+ transferencia         | trg_estado_transferencia              | O
+ transferencia         | trg_fecha_transferencia               | O
+ transferencia         | trg_transferencia_inicial             | O
+ renglon_transferencia | trg_bloqueo_renglon_transferencia     | O
+ comprobante           | trg_comprobante_inmutable             | O
+ renglon_comprobante   | trg_descuenta_stock_actualiza_totales | O
+ renglon_comprobante   | trg_renglon_venta_inmutable           | O
+ renglon_comprobante   | trg_valida_stock_renglon              | O
+(18 rows)
+
+SELECT pg_get_constraintdef(oid) FROM pg_constraint
+WHERE conrelid='tipo_cliente'::regclass AND conname='tipo_cliente_check';
+                                                                                                                  pg_get_constraintdef                                                                                                                  
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ CHECK (((((tipo_cliente)::text = 'socio'::text) AND (descuento = (10)::numeric)) OR (((tipo_cliente)::text = 'distribuidor'::text) AND (descuento = (20)::numeric)) OR (((tipo_cliente)::text = 'exportador'::text) AND (descuento = (30)::numeric))))
+(1 row)
+
+SELECT pg_get_functiondef('public.fn_descuento_cliente(integer)'::regprocedure);
+                                pg_get_functiondef                                
+----------------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION public.fn_descuento_cliente(p_id_cliente integer)    +
+  RETURNS numeric                                                                +
+  LANGUAGE plpgsql                                                               +
+  STABLE                                                                         +
+ AS $function$\r                                                                 +
+ DECLARE\r                                                                       +
+     v_descuento NUMERIC(5, 2);\r                                                +
+ BEGIN\r                                                                         +
+     SELECT t.descuento INTO v_descuento\r                                       +
+     FROM cliente c JOIN tipo_cliente t USING (tipo_cliente)\r                   +
+     WHERE c.id_cliente = p_id_cliente;\r                                        +
+ \r                                                                              +
+     IF NOT FOUND THEN\r                                                         +
+         RAISE EXCEPTION 'El cliente con ID % no existe (RN-06)', p_id_cliente;\r+
+     END IF;\r                                                                   +
+ \r                                                                              +
+     RETURN v_descuento;\r                                                       +
+ END;\r                                                                          +
+ $function$                                                                      +
+ 
+(1 row)
+
+SELECT count(*) columnas_demo FROM information_schema.columns
+WHERE table_schema='public' AND table_name='exportador' AND column_name='descuento';
+ columnas_demo 
+---------------
+             0
+(1 row)
+
+SELECT count(*) permisos_demo FROM permiso_exportacion WHERE cod_permiso LIKE 'ETAPA5-U6-%';
+ permisos_demo 
+---------------
+             0
+(1 row)
+
+SELECT * FROM pg_indexes WHERE schemaname='public' ORDER BY tablename,indexname;
+ schemaname |        tablename         |          indexname           | tablespace |                                                             indexdef                                                             
+------------+--------------------------+------------------------------+------------+----------------------------------------------------------------------------------------------------------------------------------
+ public     | analisis_calidad         | analisis_calidad_pkey        |            | CREATE UNIQUE INDEX analisis_calidad_pkey ON public.analisis_calidad USING btree (id_analisis)
+ public     | auditoria_precio         | auditoria_precio_pkey        |            | CREATE UNIQUE INDEX auditoria_precio_pkey ON public.auditoria_precio USING btree (id_auditoria)
+ public     | bodega                   | bodega_pkey                  |            | CREATE UNIQUE INDEX bodega_pkey ON public.bodega USING btree (cuit)
+ public     | bodega                   | uq_bodega_razon_social       |            | CREATE UNIQUE INDEX uq_bodega_razon_social ON public.bodega USING btree (razon_social)
+ public     | cepa                     | cepa_pkey                    |            | CREATE UNIQUE INDEX cepa_pkey ON public.cepa USING btree (id_cepa)
+ public     | cliente                  | cliente_pkey                 |            | CREATE UNIQUE INDEX cliente_pkey ON public.cliente USING btree (id_cliente)
+ public     | cliente                  | uq_cliente_documento         |            | CREATE UNIQUE INDEX uq_cliente_documento ON public.cliente USING btree (tipo_doc, numero_doc)
+ public     | composicion              | composicion_pkey             |            | CREATE UNIQUE INDEX composicion_pkey ON public.composicion USING btree (cod_vino, id_cepa)
+ public     | comprobante              | comprobante_pkey             |            | CREATE UNIQUE INDEX comprobante_pkey ON public.comprobante USING btree (nro_comprobante)
+ public     | distribuidor             | distribuidor_pkey            |            | CREATE UNIQUE INDEX distribuidor_pkey ON public.distribuidor USING btree (id_cliente)
+ public     | empleado                 | empleado_pkey                |            | CREATE UNIQUE INDEX empleado_pkey ON public.empleado USING btree (cuit)
+ public     | exportador               | exportador_pkey              |            | CREATE UNIQUE INDEX exportador_pkey ON public.exportador USING btree (id_cliente)
+ public     | finca                    | finca_pkey                   |            | CREATE UNIQUE INDEX finca_pkey ON public.finca USING btree (id_finca)
+ public     | ingreso                  | ingreso_pkey                 |            | CREATE UNIQUE INDEX ingreso_pkey ON public.ingreso USING btree (cod_ingreso)
+ public     | localidad                | localidad_pkey               |            | CREATE UNIQUE INDEX localidad_pkey ON public.localidad USING btree (id_localidad)
+ public     | lote_uva                 | lote_uva_pkey                |            | CREATE UNIQUE INDEX lote_uva_pkey ON public.lote_uva USING btree (nro_lote)
+ public     | lote_uva                 | uq_lote_parcela_campania     |            | CREATE UNIQUE INDEX uq_lote_parcela_campania ON public.lote_uva USING btree (id_finca, nro_parcela, campania)
+ public     | maridaje                 | maridaje_pkey                |            | CREATE UNIQUE INDEX maridaje_pkey ON public.maridaje USING btree (id_maridaje)
+ public     | mv_ventas_mensuales_sala | uq_mv_ventas_mensuales_sala  |            | CREATE UNIQUE INDEX uq_mv_ventas_mensuales_sala ON public.mv_ventas_mensuales_sala USING btree (id_sala, anio, mes)
+ public     | parcela                  | parcela_pkey                 |            | CREATE UNIQUE INDEX parcela_pkey ON public.parcela USING btree (id_finca, nro_parcela)
+ public     | permiso_exportacion      | permiso_exportacion_pkey     |            | CREATE UNIQUE INDEX permiso_exportacion_pkey ON public.permiso_exportacion USING btree (cod_permiso)
+ public     | renglon_comprobante      | renglon_comprobante_pkey     |            | CREATE UNIQUE INDEX renglon_comprobante_pkey ON public.renglon_comprobante USING btree (nro_comprobante, cod_vino)
+ public     | renglon_ingreso          | renglon_ingreso_pkey         |            | CREATE UNIQUE INDEX renglon_ingreso_pkey ON public.renglon_ingreso USING btree (cod_ingreso, cod_vino)
+ public     | renglon_transferencia    | renglon_transferencia_pkey   |            | CREATE UNIQUE INDEX renglon_transferencia_pkey ON public.renglon_transferencia USING btree (nro_solicitud, cod_vino)
+ public     | sala_venta               | sala_venta_pkey              |            | CREATE UNIQUE INDEX sala_venta_pkey ON public.sala_venta USING btree (id_sala)
+ public     | socio                    | socio_pkey                   |            | CREATE UNIQUE INDEX socio_pkey ON public.socio USING btree (id_cliente)
+ public     | stock_deposito           | stock_deposito_pkey          |            | CREATE UNIQUE INDEX stock_deposito_pkey ON public.stock_deposito USING btree (cod_vino)
+ public     | stock_sala               | stock_sala_pkey              |            | CREATE UNIQUE INDEX stock_sala_pkey ON public.stock_sala USING btree (id_sala, cod_vino)
+ public     | tipo_cliente             | tipo_cliente_pkey            |            | CREATE UNIQUE INDEX tipo_cliente_pkey ON public.tipo_cliente USING btree (tipo_cliente)
+ public     | transferencia            | transferencia_pkey           |            | CREATE UNIQUE INDEX transferencia_pkey ON public.transferencia USING btree (nro_solicitud)
+ public     | transportista            | transportista_pkey           |            | CREATE UNIQUE INDEX transportista_pkey ON public.transportista USING btree (cod_transportista)
+ public     | transportista            | uq_transportista_cuit        |            | CREATE UNIQUE INDEX uq_transportista_cuit ON public.transportista USING btree (cuit)
+ public     | transportista_localidad  | transportista_localidad_pkey |            | CREATE UNIQUE INDEX transportista_localidad_pkey ON public.transportista_localidad USING btree (cod_transportista, id_localidad)
+ public     | vino                     | uq_vino_nombre_anada_volumen |            | CREATE UNIQUE INDEX uq_vino_nombre_anada_volumen ON public.vino USING btree (nombre, anada, volumen_ml)
+ public     | vino                     | vino_pkey                    |            | CREATE UNIQUE INDEX vino_pkey ON public.vino USING btree (cod_vino)
+ public     | vino_maridaje            | vino_maridaje_pkey           |            | CREATE UNIQUE INDEX vino_maridaje_pkey ON public.vino_maridaje USING btree (cod_vino, id_maridaje)
+(36 rows)
+
+
+Fin: 2026-11-03T20:04:53.6867512-03:00 | Código: 0

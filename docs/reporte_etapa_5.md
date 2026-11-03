@@ -23,19 +23,19 @@ Rama `etapa-5-consultas`, con las 30 consignas de la sección 8. Este archivo re
 | U3 | [update.sql:28](../consultas/update.sql#L28) | 30 |
 | U4 | [update.sql:36](../consultas/update.sql#L36) | 17 |
 | U5 | [update.sql:44](../consultas/update.sql#L44) | 10 |
-| U6 | [update.sql:55](../consultas/update.sql#L55) | 0 de la carga, 1 en la demostración |
+| U6 | [update.sql:55](../consultas/update.sql#L55) | 0 elegibles en la carga; 1 reasignado y 2 ventas en el ensayo |
 | I1 | [insert.sql:1](../consultas/insert.sql#L1) | 0, cobertura existente |
 | I2 | [insert.sql:18](../consultas/insert.sql#L18) | 1 maridaje y 90 asociaciones |
 | I3 | [insert.sql:33](../consultas/insert.sql#L33) | 1 cabecera y 3 renglones |
 | I4 | [insert.sql:58](../consultas/insert.sql#L58) | 1 |
 | I5 | [insert.sql:66](../consultas/insert.sql#L66) | 1 |
 | I6 | [insert.sql:74](../consultas/insert.sql#L74) | 1 cabecera y 1 renglón de 120 botellas |
-| D1 | [delete.sql:1](../consultas/delete.sql#L1) | 0 con cinco años, 33.822 cabeceras y 112.822 renglones con un año |
-| D2 | [delete.sql:29](../consultas/delete.sql#L29) | 0 |
-| D3 | [delete.sql:37](../consultas/delete.sql#L37) | 0 |
-| D4 | [delete.sql:45](../consultas/delete.sql#L45) | 0 |
-| D5 | [delete.sql:53](../consultas/delete.sql#L53) | 600 cabeceras |
-| D6 | [delete.sql:63](../consultas/delete.sql#L63) | 1 cliente |
+| D1 | [delete.sql:1](../consultas/delete.sql#L1) | 0 literal; ensayo separado: 1 cabecera y 1 renglón |
+| D2 | [delete.sql:25](../consultas/delete.sql#L25) | 0 |
+| D3 | [delete.sql:33](../consultas/delete.sql#L33) | 0 |
+| D4 | [delete.sql:41](../consultas/delete.sql#L41) | 0 |
+| D5 | [delete.sql:49](../consultas/delete.sql#L49) | 600 cabeceras y 3.000 renglones |
+| D6 | [delete.sql:69](../consultas/delete.sql#L69) | 1 cliente |
 | S1 | [select.sql:3](../consultas/select.sql#L3) | 10 |
 | S2 | [select.sql:11](../consultas/select.sql#L11) | 100 |
 | S3 | [select.sql:15](../consultas/select.sql#L15) | 3 |
@@ -51,9 +51,9 @@ Rama `etapa-5-consultas`, con las 30 consignas de la sección 8. Este archivo re
 
 ## Decisiones y ambigüedades
 
-- U1 recalcula el total histórico con el descuento ya aplicado al renglón. Cuenta diferencias y actualiza solo las filas que cambiarían.
-- U6 pide 35 % y RN-06 fija 30 %. El catálogo es compartido por todos los exportadores. El ensayo relaja el CHECK del catálogo y guarda la excepción en una columna temporal por exportador. La propuesta 009 incorpora esa columna con su CHECK y modifica `fn_descuento_cliente` para leerla. El catálogo puede conservar su CHECK de 30 % como tasa base cuando la excepción vive en el subtipo. La propuesta requiere acuerdo docente y queda fuera de las migraciones.
-- D1 cuenta el umbral literal de cinco años y, si da cero, usa un año como umbral de demostración ajustable. El purgado de archivo conserva el stock. U1 y D1 suspenden ambos triggers de inmutabilidad dentro de la transacción y requieren dueño de las tablas o superusuario. `app_rw` carece de ese permiso.
+- U1 concilia solo el total de cabecera según RN-08. La función suma los importes históricos de los renglones y preserva su precio y descuento. Esta interpretación de U1 requiere validación docente. Si subtotal o descuento de cabecera difieren, hace falta otra conciliación.
+- U6 pide 35 % y RN-06 fija 30 %. El ensayo usa el cuerpo de la propuesta 009 dentro de una transacción y prueba ventas con la función redefinida. El catálogo conserva el 30 % y el CHECK del subtipo admite 30 o 35. Queda pendiente definir con la cátedra la excepción y qué pasa al perder permisos.
+- D1 conserva el umbral literal de más de cinco años con CURRENT_DATE y devuelve cero en la carga. El ensayo positivo separado verifica el CASCADE y el stock. D1 suspende ambos triggers de inmutabilidad por el borrado en cascada. U1 suspende únicamente el de cabecera. Se requiere dueño de las tablas o superusuario.
 - D5 suspende y rehabilita dentro del ensayo el trigger de renglones de ingreso que rechaza el CASCADE de un documento cerrado. Conserva el stock resultante de la recepción histórica.
 - I1 cuenta transportistas con cero envíos y desempata por código. Una cobertura ya existente puede dar cero inserciones. S7 mide actividad por número de ingresos.
 - S3 y S4 incluyen el día actual. S7 y S8 usan meses calendario móviles. S10 compara parcelas de la misma finca y campaña, ponderando cada parcela por igual.
@@ -151,9 +151,47 @@ La [prueba con resultado no vacío](evidencias_etapa_5/equivalencia_s12_caso.log
 
 Ambas devolvieron el cliente 1. El log incluye los listados completos de pg_indexes antes de BEGIN y después de ROLLBACK. En public quedaron los mismos 36 índices, con cero nuevos y cero faltantes. El catálogo conserva únicamente los índices preexistentes, sin índices de etapa 4. Los primeros intentos sobre todo el historial con la venta de prueba se cancelaron por demora de la consulta original.
 
+## Correcciones tras la auditoría externa
+
+La auditoría comparó `2bed30a` con `bda026e`. Los logs previos quedan como trazabilidad histórica. Las corridas nuevas del 3 de noviembre de 2026 usaron sesiones separadas, con parada ante errores, en PostgreSQL 16.15 sobre `atuel_base_test` por el contenedor publicado en 55441.
+
+| Consigna | Resultado nuevo | Evidencia |
+|---|---|---|
+| D1 | 0 filas en la carga con el filtro literal. El caso positivo borró 1 cabecera y 1 renglón, conservó 2 cabeceras y 2 renglones de control y verificó el stock de sala intacto. | [DELETE completo](evidencias_etapa_5/delete_auditado.log), [caso D1](../consultas/pruebas/d1.sql), [salida D1](evidencias_etapa_5/d1_positivo.log) |
+| U6 | 0 candidatos originales. El cliente con 5 permisos recibió 35 % y pagó 655,20. El cliente con 1 permiso recibió 30 % y pagó 705,60. Ambos renglones partieron de 1.008,00. | [Caso U6](../consultas/pruebas/u6.sql), [ventas](evidencias_etapa_5/u6_ventas.log) |
+| U1 | 0 diferencias en 150.000 comprobantes. En el ensayo, 1 fila pasó de 908,20 a 907,20, igual a la función. Las comparaciones bidireccionales confirmaron renglones y stock intactos. | [UPDATE completo](evidencias_etapa_5/update_auditado.log), [caso U1](../consultas/pruebas/u1.sql), [salida U1](evidencias_etapa_5/u1_positivo.log) |
+| D5 | 600 cabeceras y 3.000 renglones antes, 0 y 0 durante el ensayo. Stock del depósito idéntico y trigger habilitado. Una nueva conexión volvió a contar 600 y 3.000 tras el ROLLBACK. | [DELETE completo](evidencias_etapa_5/delete_auditado.log), [control posterior](evidencias_etapa_5/d5_restaurado.log) |
+| D2 | 0 en la carga. El caso positivo eliminó la cepa sin referencias y conservó las plantadas. | [Caso D2](../consultas/pruebas/d2.sql), [salida D2](evidencias_etapa_5/d2_positivo.log) |
+| D3 | 0 en la carga. Con fecha de baja externa 2026-11-03 se eliminó solo al empleado con menos de dos años. Se conservaron el límite exacto y el de mayor antigüedad. | [Caso D3](../consultas/pruebas/d3.sql), [salida D3](evidencias_etapa_5/d3_positivo.log) |
+| D4 | 0 en la carga. Se eliminó al socio antiguo sin compras junto con su subtipo. Se conservaron el comprador y el socio en el límite de cinco años. | [Caso D4](../consultas/pruebas/d4.sql), [salida D4](evidencias_etapa_5/d4_positivo.log) |
+| I1 | 0 en la carga. El desempate por código permitió insertar una nueva cobertura para General Alvear en el ensayo. | [Caso I1](../consultas/pruebas/i1.sql), [salida I1](evidencias_etapa_5/i1_positivo.log) |
+| S4 | 0 en la ventana actual de la carga. El ensayo devolvió las salas 1 a 5 con 10, 9, 8, 7 y 6 botellas. El código menor resolvió el empate por el quinto puesto. | [Caso S4](../consultas/pruebas/s4.sql), [salida S4](evidencias_etapa_5/s4_positivo.log) |
+| S7 | 0 en la ventana actual de la carga. El ensayo devolvió ambos líderes, transportistas 1 y 2 con 2 ingresos cada uno. | [Caso S7](../consultas/pruebas/s7.sql), [salida S7](evidencias_etapa_5/s7_positivo.log) |
+
+### Planes oficiales y variantes históricas
+
+Las dos familias ejecutaron ANALYZE y EXPLAIN (ANALYZE, BUFFERS). Los logs contienen el SQL, la fecha de referencia, los parámetros, los 36 índices preexistentes y los planes. La S1 oficial es el ranking general. La S1 histórica agrega un join con comprobante y un filtro trimestral, por lo que se compara exclusivamente contra el mismo SQL histórico.
+
+| Consulta | Oficial, filas y ms | Histórica, filas y ms |
+|---|---:|---:|
+| S1 | 10 · 77,699 | 10 · 92,543 |
+| S4 | 0 · 0,149 | 5 · 0,615 |
+| S8 | 25 · 25,815 | 25 · 19,938 |
+| S10 | 3.000 · 702,982 | 600 · 29,544 |
+
+[SQL oficial](../consultas/linea_base_oficial.sql) · [Planes oficiales](evidencias_etapa_5/linea_base_oficial_auditada.log) · [SQL histórico](../consultas/linea_base.sql) · [Planes históricos](evidencias_etapa_5/linea_base_historica_auditada.log)
+
+Para etapa 4 se debe repetir cada consulta con el mismo SQL, parámetros, fecha efectiva para ventanas relativas y carga. Sigue ausente `008_indices.sql`. Las mediciones corresponden a una base sin esos índices y quedan como línea base.
+
+### Estado al finalizar
+
+Desde una conexión nueva se verificaron 150.000 comprobantes, 500.000 renglones, 18 triggers de usuario en estado O, el CHECK original del 30 %, ausencia de la columna y permisos del ensayo U6, y la definición original de `fn_descuento_cliente`. Las salidas SQL de los controles inicial y final coincidieron de forma ordinal. Las secuencias pueden avanzar durante los INSERT revertidos.
+
+[Estado inicial](evidencias_etapa_5/auditoria_antes.log) · [Estado final](evidencias_etapa_5/auditoria_despues.log) · [Comparación](evidencias_etapa_5/auditoria_comparacion.log) · [Enunciado versionado](TPI_Bodegas_del_Atuel.pdf)
+
 ## Cosas no verificadas
 
-- La propuesta 009 quedó sin aplicar. Falta la decisión docente sobre la vigencia de la excepción al perder permisos.
+- La propuesta 009 se ensayó dentro de ROLLBACK. Falta aprobación docente de la excepción a RN-06 y del criterio al perder permisos.
 - S4 y S7 devolvieron cero filas con las ventanas temporales vigentes. La variante histórica de S4 mide una ventana con transferencias.
 - Falta la comparación de rendimiento con índices de etapa 4.
 
@@ -165,7 +203,7 @@ La usuaria verificó desde su terminal que `app_rw` conecta por TCP al puerto 55
 
 - Todas las transferencias tienen fecha 2025-03-01 y todos los ingresos tienen fecha 2025-01-15. Con esta distribución, S4, S7 e I1 se pueden ejecutar, pero sus ventanas relativas no permiten evaluar actividad reciente representativa. La variante histórica de S4 incluye filas, concentradas en un solo día.
 
-- El historial tiene fechas fijas en el generador. U6 encontró cero candidatos reales. El ensayo adicional insertó permisos ficticios para un solo exportador y revirtió todo al final.
+- U6 encontró cero candidatos reales. El ensayo agregó cuatro permisos a un exportador y revirtió la modificación de la función, las ventas y los permisos al final.
 - ALTER TABLE toma bloqueos sobre tablas. Ejecutar los ensayos en una base de laboratorio aislada. ROLLBACK revierte las filas y el DDL, mientras que los valores consumidos de secuencias pueden dejar huecos.
 - El commit inicial `0167fae` incluyó por error un `.env` de desarrollo local. Según la verificación del grupo, contenía únicamente configuración y una contraseña local de desarrollo, sin credenciales reales. Se retiró del índice en `98b6877` durante la etapa 3. Se conservó el historial porque los datos eran de desarrollo local y el grupo decidió preservar los commits existentes. Para evitar repetirlo, `.gitignore` excluye `.env`, las claves se mantienen en el entorno y el repositorio conserva solo la plantilla `.env.example`. El [control Git](evidencias_etapa_5/gitignore_cierre.log) registra la regla, la plantilla permitida y el índice actual.
 

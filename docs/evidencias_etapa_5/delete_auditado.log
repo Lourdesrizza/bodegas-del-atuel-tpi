@@ -1,0 +1,202 @@
+Inicio: 2026-11-03T20:06:34.532471-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < consultas/delete.sql
+-- D1 · Purgar comprobantes históricos de socios
+-- El purgado es de archivo y conserva stock. Requiere dueño de tablas.
+BEGIN;
+BEGIN
+SELECT count(*) FROM comprobante c JOIN socio s USING(id_cliente) WHERE c.fecha<CURRENT_DATE-interval '5 years';
+ count 
+-------
+     0
+(1 row)
+
+CREATE TEMP TABLE purga AS
+SELECT c.nro_comprobante FROM comprobante c JOIN socio s USING(id_cliente)
+WHERE c.fecha < CURRENT_DATE - interval '5 years';
+SELECT 0
+CREATE TEMP TABLE stock_antes AS SELECT * FROM stock_sala;
+SELECT 3000
+SELECT count(*) cabeceras FROM purga;
+ cabeceras 
+-----------
+         0
+(1 row)
+
+SELECT count(*) renglones FROM renglon_comprobante JOIN purga USING(nro_comprobante);
+ renglones 
+-----------
+         0
+(1 row)
+
+ALTER TABLE comprobante DISABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+ALTER TABLE renglon_comprobante DISABLE TRIGGER trg_renglon_venta_inmutable;
+ALTER TABLE
+DELETE FROM comprobante USING purga WHERE comprobante.nro_comprobante=purga.nro_comprobante;
+DELETE 0
+SELECT count(*) cabeceras_restantes FROM comprobante JOIN purga USING(nro_comprobante);
+ cabeceras_restantes 
+---------------------
+                   0
+(1 row)
+
+SELECT count(*) renglones_restantes FROM renglon_comprobante JOIN purga USING(nro_comprobante);
+ renglones_restantes 
+---------------------
+                   0
+(1 row)
+
+SELECT NOT EXISTS (
+  (SELECT * FROM stock_antes EXCEPT SELECT * FROM stock_sala)
+  UNION ALL
+  (SELECT * FROM stock_sala EXCEPT SELECT * FROM stock_antes)
+) AS stock_sala_intacto;
+ stock_sala_intacto 
+--------------------
+ t
+(1 row)
+
+ALTER TABLE comprobante ENABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+ALTER TABLE renglon_comprobante ENABLE TRIGGER trg_renglon_venta_inmutable;
+ALTER TABLE
+ROLLBACK;
+ROLLBACK
+-- D2 · Eliminar cepas sin composición ni plantación
+-- Dos NOT EXISTS excluyen las cepas referenciadas.
+BEGIN;
+BEGIN
+SELECT count(*) FROM cepa c WHERE NOT EXISTS (SELECT FROM composicion v WHERE v.id_cepa=c.id_cepa) AND NOT EXISTS (SELECT FROM parcela p WHERE p.id_cepa=c.id_cepa);
+ count 
+-------
+     0
+(1 row)
+
+DELETE FROM cepa c WHERE NOT EXISTS (SELECT FROM composicion v WHERE v.id_cepa=c.id_cepa) AND NOT EXISTS (SELECT FROM parcela p WHERE p.id_cepa=c.id_cepa);
+DELETE 0
+SELECT count(*) FROM cepa c WHERE NOT EXISTS (SELECT FROM composicion v WHERE v.id_cepa=c.id_cepa) AND NOT EXISTS (SELECT FROM parcela p WHERE p.id_cepa=c.id_cepa);
+ count 
+-------
+     0
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- D3 · Eliminar empleados con menos de dos años de una sala dada de baja
+-- Cambiar sala 1 y fecha_baja informada externamente. El esquema no guarda la baja.
+BEGIN;
+BEGIN
+SELECT count(*) FROM empleado WHERE id_sala=1 AND fecha_ingreso > DATE '2026-11-03'-interval '2 years' AND fecha_ingreso <= DATE '2026-11-03';
+ count 
+-------
+     0
+(1 row)
+
+DELETE FROM empleado WHERE id_sala=1 AND fecha_ingreso > DATE '2026-11-03'-interval '2 years' AND fecha_ingreso <= DATE '2026-11-03';
+DELETE 0
+SELECT count(*) FROM empleado WHERE id_sala=1 AND fecha_ingreso > DATE '2026-11-03'-interval '2 years' AND fecha_ingreso <= DATE '2026-11-03';
+ count 
+-------
+     0
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- D4 · Eliminar socios sin compras y con más de cinco años de alta
+-- NOT EXISTS excluye clientes con comprobantes. CASCADE elimina el subtipo.
+BEGIN;
+BEGIN
+SELECT count(*) FROM cliente s WHERE s.tipo_cliente='socio' AND s.fecha_alta<CURRENT_DATE-interval '5 years' AND NOT EXISTS (SELECT FROM comprobante c WHERE c.id_cliente=s.id_cliente);
+ count 
+-------
+     0
+(1 row)
+
+DELETE FROM cliente s WHERE s.tipo_cliente='socio' AND s.fecha_alta<CURRENT_DATE-interval '5 years' AND NOT EXISTS (SELECT FROM comprobante c WHERE c.id_cliente=s.id_cliente);
+DELETE 0
+SELECT count(*) FROM cliente s WHERE s.tipo_cliente='socio' AND s.fecha_alta<CURRENT_DATE-interval '5 years' AND NOT EXISTS (SELECT FROM comprobante c WHERE c.id_cliente=s.id_cliente);
+ count 
+-------
+     0
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- D5 · Eliminar ingresos procesados de hace más de 365 días
+-- El CASCADE elimina renglones. El depósito conserva el stock recibido.
+BEGIN;
+BEGIN
+CREATE TEMP TABLE ingresos_objetivo AS
+SELECT cod_ingreso FROM ingreso WHERE estado='procesado' AND fecha<CURRENT_DATE-365;
+SELECT 600
+CREATE TEMP TABLE deposito_antes AS TABLE stock_deposito;
+SELECT 600
+SELECT count(*) cabeceras_antes FROM ingresos_objetivo;
+ cabeceras_antes 
+-----------------
+             600
+(1 row)
+
+SELECT count(*) renglones_antes FROM renglon_ingreso JOIN ingresos_objetivo USING(cod_ingreso);
+ renglones_antes 
+-----------------
+            3000
+(1 row)
+
+ALTER TABLE renglon_ingreso DISABLE TRIGGER trg_bloqueo_renglon_ingreso;
+ALTER TABLE
+DELETE FROM ingreso USING ingresos_objetivo WHERE ingreso.cod_ingreso=ingresos_objetivo.cod_ingreso;
+DELETE 600
+ALTER TABLE renglon_ingreso ENABLE TRIGGER trg_bloqueo_renglon_ingreso;
+ALTER TABLE
+SELECT count(*) cabeceras_despues FROM ingreso JOIN ingresos_objetivo USING(cod_ingreso);
+ cabeceras_despues 
+-------------------
+                 0
+(1 row)
+
+SELECT count(*) renglones_despues FROM renglon_ingreso JOIN ingresos_objetivo USING(cod_ingreso);
+ renglones_despues 
+-------------------
+                 0
+(1 row)
+
+SELECT NOT EXISTS (
+  (TABLE deposito_antes EXCEPT TABLE stock_deposito)
+  UNION ALL (TABLE stock_deposito EXCEPT TABLE deposito_antes)
+) AS stock_deposito_intacto;
+ stock_deposito_intacto 
+------------------------
+ t
+(1 row)
+
+SELECT tgname,tgenabled FROM pg_trigger WHERE tgname='trg_bloqueo_renglon_ingreso';
+           tgname            | tgenabled 
+-----------------------------+-----------
+ trg_bloqueo_renglon_ingreso | O
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- D6 · Eliminar socios sin compras de una localidad
+-- Cambiar General Alvear. CASCADE elimina el subtipo.
+BEGIN;
+BEGIN
+SELECT count(*) FROM cliente s WHERE s.tipo_cliente='socio' AND s.id_localidad IN (SELECT id_localidad FROM localidad WHERE nombre='General Alvear' AND provincia='Mendoza') AND NOT EXISTS (SELECT FROM comprobante c WHERE c.id_cliente=s.id_cliente);
+ count 
+-------
+     1
+(1 row)
+
+DELETE FROM cliente s WHERE s.tipo_cliente='socio' AND s.id_localidad IN (SELECT id_localidad FROM localidad WHERE nombre='General Alvear' AND provincia='Mendoza') AND NOT EXISTS (SELECT FROM comprobante c WHERE c.id_cliente=s.id_cliente);
+DELETE 1
+SELECT count(*) FROM cliente s WHERE s.tipo_cliente='socio' AND s.id_localidad IN (SELECT id_localidad FROM localidad WHERE nombre='General Alvear' AND provincia='Mendoza') AND NOT EXISTS (SELECT FROM comprobante c WHERE c.id_cliente=s.id_cliente);
+ count 
+-------
+     0
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+Fin: 2026-11-03T20:06:34.955538-03:00 | Código: 0

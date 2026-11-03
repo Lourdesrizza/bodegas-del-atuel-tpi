@@ -1,0 +1,50 @@
+Inicio: 2026-11-03T20:07:57.774613-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < consultas/pruebas/d4.sql
+BEGIN;
+BEGIN
+CREATE TEMP TABLE d4_clientes AS
+WITH altas AS (
+  INSERT INTO cliente(id_localidad,nombre_o_razon_social,tipo_doc,numero_doc,domicilio,fecha_alta,tipo_cliente)
+  VALUES (1,'ETAPA5 D4 antiguo','DNI','99000041','Ensayo',CURRENT_DATE-interval '6 years','socio'),
+         (1,'ETAPA5 D4 límite','DNI','99000042','Ensayo',CURRENT_DATE-interval '5 years','socio'),
+         (1,'ETAPA5 D4 comprador','DNI','99000043','Ensayo',CURRENT_DATE-interval '6 years','socio')
+  RETURNING id_cliente,nombre_o_razon_social
+) SELECT * FROM altas;
+SELECT 3
+INSERT INTO socio(id_cliente) SELECT id_cliente FROM d4_clientes;
+INSERT 0 3
+INSERT INTO comprobante(id_cliente,id_sala)
+SELECT id_cliente,1 FROM d4_clientes WHERE nombre_o_razon_social='ETAPA5 D4 comprador';
+INSERT 0 1
+WITH borrados AS (
+  DELETE FROM cliente s WHERE s.tipo_cliente='socio' AND s.fecha_alta<CURRENT_DATE-interval '5 years'
+    AND NOT EXISTS (SELECT FROM comprobante c WHERE c.id_cliente=s.id_cliente)
+  RETURNING s.nombre_o_razon_social
+) SELECT * INTO TEMP d4_borrados FROM borrados;
+SELECT 1
+TABLE d4_borrados;
+ nombre_o_razon_social 
+-----------------------
+ ETAPA5 D4 antiguo
+(1 row)
+
+SELECT d.nombre_o_razon_social,s.id_cliente IS NOT NULL subtipo_presente
+FROM d4_clientes d LEFT JOIN socio s USING(id_cliente) ORDER BY 1;
+ nombre_o_razon_social | subtipo_presente 
+-----------------------+------------------
+ ETAPA5 D4 antiguo     | f
+ ETAPA5 D4 comprador   | t
+ ETAPA5 D4 límite      | t
+(3 rows)
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM d4_borrados WHERE nombre_o_razon_social='ETAPA5 D4 antiguo')
+     OR (SELECT count(*) FROM d4_clientes JOIN socio USING(id_cliente))<>2
+     OR EXISTS (SELECT FROM d4_borrados WHERE nombre_o_razon_social IN ('ETAPA5 D4 límite','ETAPA5 D4 comprador'))
+  THEN RAISE EXCEPTION 'Falló D4'; END IF;
+END $$;
+DO
+ROLLBACK;
+ROLLBACK
+Fin: 2026-11-03T20:07:58.216058-03:00 | Código: 0
