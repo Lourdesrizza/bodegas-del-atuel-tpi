@@ -47,13 +47,23 @@ SELECT count(*) FROM cliente s WHERE s.tipo_cliente='socio' AND s.fecha_alta<CUR
 ROLLBACK;
 
 -- D5 · Eliminar ingresos procesados de hace más de 365 días
--- El CASCADE elimina renglones. Se conserva stock del depósito.
+-- El CASCADE elimina renglones. El depósito conserva el stock recibido.
 BEGIN;
-SELECT count(*) FROM ingreso WHERE estado='procesado' AND fecha<CURRENT_DATE-365;
+CREATE TEMP TABLE ingresos_objetivo AS
+SELECT cod_ingreso FROM ingreso WHERE estado='procesado' AND fecha<CURRENT_DATE-365;
+CREATE TEMP TABLE deposito_antes AS TABLE stock_deposito;
+SELECT count(*) cabeceras_antes FROM ingresos_objetivo;
+SELECT count(*) renglones_antes FROM renglon_ingreso JOIN ingresos_objetivo USING(cod_ingreso);
 ALTER TABLE renglon_ingreso DISABLE TRIGGER trg_bloqueo_renglon_ingreso;
-DELETE FROM ingreso WHERE estado='procesado' AND fecha<CURRENT_DATE-365;
+DELETE FROM ingreso USING ingresos_objetivo WHERE ingreso.cod_ingreso=ingresos_objetivo.cod_ingreso;
 ALTER TABLE renglon_ingreso ENABLE TRIGGER trg_bloqueo_renglon_ingreso;
-SELECT count(*) FROM ingreso WHERE estado='procesado' AND fecha<CURRENT_DATE-365;
+SELECT count(*) cabeceras_despues FROM ingreso JOIN ingresos_objetivo USING(cod_ingreso);
+SELECT count(*) renglones_despues FROM renglon_ingreso JOIN ingresos_objetivo USING(cod_ingreso);
+SELECT NOT EXISTS (
+  (TABLE deposito_antes EXCEPT TABLE stock_deposito)
+  UNION ALL (TABLE stock_deposito EXCEPT TABLE deposito_antes)
+) AS stock_deposito_intacto;
+SELECT tgname,tgenabled FROM pg_trigger WHERE tgname='trg_bloqueo_renglon_ingreso';
 ROLLBACK;
 
 -- D6 · Eliminar socios sin compras de una localidad

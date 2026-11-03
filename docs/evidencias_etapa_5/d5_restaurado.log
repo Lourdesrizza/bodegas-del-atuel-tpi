@@ -1,0 +1,38 @@
+Inicio: 2026-11-03T20:08:45.8121496-03:00
+Puerto: 0.0.0.0:55441 [::]:55441
+Base: atuel_base_test
+Comando: Get-Content -Raw docs/evidencias_etapa_5/d5_restaurado.sql | docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f -
+SELECT current_database(),current_user;
+ current_database | current_user 
+------------------+--------------
+ atuel_base_test  | atuel_admin
+(1 row)
+
+SELECT count(*) cabeceras_restauradas FROM ingreso
+WHERE estado='procesado' AND fecha<CURRENT_DATE-365;
+ cabeceras_restauradas 
+-----------------------
+                   600
+(1 row)
+
+SELECT count(*) renglones_restaurados FROM renglon_ingreso JOIN ingreso USING(cod_ingreso)
+WHERE estado='procesado' AND fecha<CURRENT_DATE-365;
+ renglones_restaurados 
+-----------------------
+                  3000
+(1 row)
+
+SELECT count(*) filas_stock FROM stock_deposito;
+ filas_stock 
+-------------
+         600
+(1 row)
+
+SELECT tgname,tgenabled FROM pg_trigger WHERE tgname='trg_bloqueo_renglon_ingreso';
+           tgname            | tgenabled 
+-----------------------------+-----------
+ trg_bloqueo_renglon_ingreso | O
+(1 row)
+
+
+Fin: 2026-11-03T20:08:46.1041103-03:00 | Código: 0
