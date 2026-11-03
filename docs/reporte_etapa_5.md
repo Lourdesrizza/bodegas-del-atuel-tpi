@@ -143,13 +143,27 @@ ORDER BY c.id_cliente;
 
 Para la misma bodega, ambas devolvieron 0 filas y EXCEPT devolvió 0 en cada sentido. La [prueba de equivalencia](evidencias_etapa_5/equivalencia_s12.log) usó un índice auxiliar únicamente para ejecutar la versión original. El índice se creó después de medir las variantes históricas y se revirtió con ROLLBACK. La parte común de tintos devolvió 226 clientes.
 
+La [prueba con resultado no vacío](evidencias_etapa_5/equivalencia_s12_caso.log) creó dentro de la transacción una venta del cliente 1 con los 30 vinos de la bodega objetivo. Ambas consultas se ejecutaron sin cambios sobre copias temporales con esa compra y dos clientes, uno de ellos como control sin compras. El resultado fue:
+
+| Original | Reformulada | Solo original (EXCEPT) | Solo reformulada (EXCEPT) |
+|---:|---:|---:|---:|
+| 1 | 1 | 0 | 0 |
+
+Ambas devolvieron el cliente 1. El log incluye los listados completos de pg_indexes antes de BEGIN y después de ROLLBACK. En public quedaron los mismos 36 índices, con cero nuevos y cero faltantes. El catálogo conserva únicamente los índices preexistentes, sin índices de etapa 4. Los primeros intentos sobre todo el historial con la venta de prueba se cancelaron por demora de la consulta original.
+
 ## Cosas no verificadas
 
 - La propuesta 009 quedó sin aplicar. Falta la decisión docente sobre la vigencia de la excepción al perder permisos.
 - S4 y S7 devolvieron cero filas con las ventanas temporales vigentes. La variante histórica de S4 mide una ventana con transferencias.
-- Falta la comparación de rendimiento con índices de etapa 4 y la prueba TCP con `app_rw` desde la terminal del usuario.
+- Falta la comparación de rendimiento con índices de etapa 4.
+
+## Conexión TCP
+
+La usuaria verificó desde su terminal que `app_rw` conecta por TCP al puerto 55441 y que PostgreSQL rechaza las operaciones DDL con `InsufficientPrivilege`. El resultado se registra como verificación reportada por la usuaria.
 
 ## Riesgos
+
+- Todas las transferencias tienen fecha 2025-03-01 y todos los ingresos tienen fecha 2025-01-15. Con esta distribución, S4, S7 e I1 se pueden ejecutar, pero sus ventanas relativas no permiten evaluar actividad reciente representativa. La variante histórica de S4 incluye filas, concentradas en un solo día.
 
 - El historial tiene fechas fijas en el generador. U6 encontró cero candidatos reales. El ensayo adicional insertó permisos ficticios para un solo exportador y revirtió todo al final.
 - ALTER TABLE toma bloqueos sobre tablas. Ejecutar los ensayos en una base de laboratorio aislada. ROLLBACK revierte las filas y el DDL, mientras que los valores consumidos de secuencias pueden dejar huecos.
