@@ -1,0 +1,173 @@
+Base: atuel_base_test
+
+Inicio: 2026-11-03T19:39:34.592250-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < consultas\linea_base.sql
+-- Variantes históricas para repetir la comparación con los mismos parámetros.
+-- Ejecutar en laboratorio y comprobar el catálogo de índices.
+ANALYZE comprobante, renglon_comprobante, vino, sala_venta, transferencia,
+        renglon_transferencia, lote_uva, parcela;
+ANALYZE
+-- S1 · Ventas del trimestre histórico
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT v.cod_vino,v.nombre,sum(r.cantidad) botellas FROM vino v JOIN renglon_comprobante r USING(cod_vino) JOIN comprobante c USING(nro_comprobante) WHERE c.fecha BETWEEN DATE '2026-07-28' AND DATE '2026-10-28' GROUP BY v.cod_vino ORDER BY botellas DESC,v.cod_vino LIMIT 10;
+                                                                                      QUERY PLAN                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=10612.88..10612.91 rows=10 width=31) (actual time=157.612..164.286 rows=10 loops=1)
+   Buffers: shared hit=5047
+   ->  Sort  (cost=10612.88..10614.38 rows=600 width=31) (actual time=157.609..164.281 rows=10 loops=1)
+         Sort Key: (sum(r.cantidad)) DESC, v.cod_vino
+         Sort Method: top-N heapsort  Memory: 26kB
+         Buffers: shared hit=5047
+         ->  Finalize GroupAggregate  (cost=10447.91..10599.92 rows=600 width=31) (actual time=157.296..164.140 rows=100 loops=1)
+               Group Key: v.cod_vino
+               Buffers: shared hit=5044
+               ->  Gather Merge  (cost=10447.91..10587.92 rows=1200 width=31) (actual time=157.285..164.052 rows=300 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=5044
+                     ->  Sort  (cost=9447.88..9449.38 rows=600 width=31) (actual time=138.362..138.375 rows=100 loops=3)
+                           Sort Key: v.cod_vino
+                           Sort Method: quicksort  Memory: 30kB
+                           Buffers: shared hit=5044
+                           Worker 0:  Sort Method: quicksort  Memory: 30kB
+                           Worker 1:  Sort Method: quicksort  Memory: 30kB
+                           ->  Partial HashAggregate  (cost=9414.20..9420.20 rows=600 width=31) (actual time=138.071..138.098 rows=100 loops=3)
+                                 Group Key: v.cod_vino
+                                 Batches: 1  Memory Usage: 57kB
+                                 Buffers: shared hit=5030
+                                 Worker 0:  Batches: 1  Memory Usage: 57kB
+                                 Worker 1:  Batches: 1  Memory Usage: 57kB
+                                 ->  Hash Join  (cost=2812.64..9244.56 rows=33928 width=27) (actual time=22.847..126.912 rows=27184 loops=3)
+                                       Hash Cond: (r.cod_vino = v.cod_vino)
+                                       Buffers: shared hit=5030
+                                       ->  Parallel Hash Join  (cost=2791.14..9133.36 rows=33928 width=8) (actual time=20.863..110.591 rows=27184 loops=3)
+                                             Hash Cond: (r.nro_comprobante = c.nro_comprobante)
+                                             Buffers: shared hit=5000
+                                             ->  Parallel Seq Scan on renglon_comprobante r  (cost=0.00..5795.33 rows=208333 width=12) (actual time=0.028..33.535 rows=166667 loops=3)
+                                                   Buffers: shared hit=3712
+                                             ->  Parallel Hash  (cost=2611.53..2611.53 rows=14369 width=4) (actual time=19.371..19.372 rows=8151 loops=3)
+                                                   Buckets: 32768  Batches: 1  Memory Usage: 1248kB
+                                                   Buffers: shared hit=1288
+                                                   ->  Parallel Seq Scan on comprobante c  (cost=0.00..2611.53 rows=14369 width=4) (actual time=0.027..12.656 rows=8151 loops=3)
+                                                         Filter: ((fecha >= '2026-07-28'::date) AND (fecha <= '2026-10-28'::date))
+                                                         Rows Removed by Filter: 41849
+                                                         Buffers: shared hit=1288
+                                       ->  Hash  (cost=14.00..14.00 rows=600 width=23) (actual time=1.871..1.872 rows=600 loops=3)
+                                             Buckets: 1024  Batches: 1  Memory Usage: 41kB
+                                             Buffers: shared hit=24
+                                             ->  Seq Scan on vino v  (cost=0.00..14.00 rows=600 width=23) (actual time=0.092..0.492 rows=600 loops=3)
+                                                   Buffers: shared hit=24
+ Planning:
+   Buffers: shared hit=130
+ Planning Time: 6.005 ms
+ Execution Time: 164.827 ms
+(49 rows)
+
+-- S4 · Quince días con transferencias
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT t.id_sala,sum(r.cantidad) botellas FROM transferencia t JOIN renglon_transferencia r USING(nro_solicitud) WHERE r.cod_vino=1 AND t.fecha_confeccion BETWEEN DATE '2025-02-16' AND DATE '2025-03-02' GROUP BY t.id_sala ORDER BY botellas DESC,t.id_sala LIMIT 5;
+                                                                       QUERY PLAN                                                                       
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=76.83..76.84 rows=5 width=12) (actual time=0.398..0.400 rows=5 loops=1)
+   Buffers: shared hit=27
+   ->  Sort  (cost=76.83..76.89 rows=25 width=12) (actual time=0.396..0.398 rows=5 loops=1)
+         Sort Key: (sum(r.cantidad)) DESC, t.id_sala
+         Sort Method: top-N heapsort  Memory: 25kB
+         Buffers: shared hit=27
+         ->  GroupAggregate  (cost=75.98..76.42 rows=25 width=12) (actual time=0.371..0.382 rows=25 loops=1)
+               Group Key: t.id_sala
+               Buffers: shared hit=27
+               ->  Sort  (cost=75.98..76.04 rows=25 width=8) (actual time=0.366..0.369 rows=25 loops=1)
+                     Sort Key: t.id_sala
+                     Sort Method: quicksort  Memory: 25kB
+                     Buffers: shared hit=27
+                     ->  Hash Join  (cost=54.81..75.40 rows=25 width=8) (actual time=0.244..0.356 rows=25 loops=1)
+                           Hash Cond: (t.nro_solicitud = r.nro_solicitud)
+                           Buffers: shared hit=27
+                           ->  Seq Scan on transferencia t  (cost=0.00..19.00 rows=600 width=8) (actual time=0.014..0.078 rows=600 loops=1)
+                                 Filter: ((fecha_confeccion >= '2025-02-16'::date) AND (fecha_confeccion <= '2025-03-02'::date))
+                                 Buffers: shared hit=10
+                           ->  Hash  (cost=54.50..54.50 rows=25 width=8) (actual time=0.215..0.216 rows=25 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                 Buffers: shared hit=17
+                                 ->  Seq Scan on renglon_transferencia r  (cost=0.00..54.50 rows=25 width=8) (actual time=0.017..0.198 rows=25 loops=1)
+                                       Filter: (cod_vino = 1)
+                                       Rows Removed by Filter: 2975
+                                       Buffers: shared hit=17
+ Planning:
+   Buffers: shared hit=48
+ Planning Time: 1.171 ms
+ Execution Time: 0.513 ms
+(30 rows)
+
+-- S8 · Ventas del trimestre histórico
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT s.id_sala,coalesce(sum(c.total),0) total FROM sala_venta s LEFT JOIN comprobante c ON c.id_sala=s.id_sala AND c.fecha BETWEEN DATE '2026-07-28' AND DATE '2026-10-28' GROUP BY s.id_sala ORDER BY total DESC,s.id_sala;
+                                                              QUERY PLAN                                                              
+--------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=3737.59..3737.65 rows=25 width=36) (actual time=53.445..53.451 rows=25 loops=1)
+   Sort Key: (COALESCE(sum(c.total), '0'::numeric)) DESC, s.id_sala
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=1289
+   ->  HashAggregate  (cost=3736.70..3737.01 rows=25 width=36) (actual time=53.399..53.413 rows=25 loops=1)
+         Group Key: s.id_sala
+         Batches: 1  Memory Usage: 32kB
+         Buffers: shared hit=1289
+         ->  Hash Right Join  (cost=1.56..3614.56 rows=24428 width=11) (actual time=0.080..38.874 rows=24454 loops=1)
+               Hash Cond: (c.id_sala = s.id_sala)
+               Buffers: shared hit=1289
+               ->  Seq Scan on comprobante c  (cost=0.00..3538.00 rows=24428 width=11) (actual time=0.013..26.113 rows=24454 loops=1)
+                     Filter: ((fecha >= '2026-07-28'::date) AND (fecha <= '2026-10-28'::date))
+                     Rows Removed by Filter: 125546
+                     Buffers: shared hit=1288
+               ->  Hash  (cost=1.25..1.25 rows=25 width=4) (actual time=0.046..0.047 rows=25 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=1
+                     ->  Seq Scan on sala_venta s  (cost=0.00..1.25 rows=25 width=4) (actual time=0.015..0.020 rows=25 loops=1)
+                           Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=50 dirtied=1
+ Planning Time: 1.842 ms
+ Execution Time: 53.640 ms
+(24 rows)
+
+-- S10 · Cosechas de la campaña 2024
+EXPLAIN (ANALYZE, BUFFERS)
+WITH rendimiento AS (SELECT l.id_finca,l.nro_parcela,l.campania,l.kilos/p.superficie kg_ha FROM lote_uva l JOIN parcela p USING(id_finca,nro_parcela) WHERE l.fecha_cosecha >= DATE '2024-01-01' AND l.fecha_cosecha < DATE '2025-01-01') SELECT r.*,r.kg_ha<(SELECT avg(f.kg_ha) FROM rendimiento f WHERE f.id_finca=r.id_finca AND f.campania=r.campania) bajo_promedio FROM rendimiento r ORDER BY id_finca,nro_parcela,campania;
+                                                                         QUERY PLAN                                                                         
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=9330.68..9332.20 rows=607 width=43) (actual time=102.156..102.216 rows=600 loops=1)
+   Sort Key: r.id_finca, r.nro_parcela, r.campania
+   Sort Method: quicksort  Memory: 48kB
+   Buffers: shared hit=4204
+   CTE rendimiento
+     ->  Nested Loop  (cost=0.29..68.64 rows=607 width=42) (actual time=0.385..9.887 rows=600 loops=1)
+           Buffers: shared hit=4204
+           ->  Seq Scan on parcela p  (cost=0.00..10.00 rows=600 width=13) (actual time=0.019..0.130 rows=600 loops=1)
+                 Buffers: shared hit=4
+           ->  Memoize  (cost=0.29..0.70 rows=1 width=15) (actual time=0.014..0.015 rows=1 loops=600)
+                 Cache Key: p.id_finca, p.nro_parcela
+                 Cache Mode: logical
+                 Hits: 0  Misses: 600  Evictions: 0  Overflows: 0  Memory Usage: 70kB
+                 Buffers: shared hit=4200
+                 ->  Index Scan using uq_lote_parcela_campania on lote_uva l  (cost=0.28..0.69 rows=1 width=15) (actual time=0.012..0.012 rows=1 loops=600)
+                       Index Cond: ((id_finca = p.id_finca) AND (nro_parcela = p.nro_parcela))
+                       Filter: ((fecha_cosecha >= '2024-01-01'::date) AND (fecha_cosecha < '2025-01-01'::date))
+                       Rows Removed by Filter: 4
+                       Buffers: shared hit=4200
+   ->  CTE Scan on rendimiento r  (cost=0.00..9233.99 rows=607 width=43) (actual time=10.438..98.763 rows=600 loops=1)
+         Buffers: shared hit=4204
+         SubPlan 2
+           ->  Aggregate  (cost=15.18..15.19 rows=1 width=32) (actual time=0.161..0.161 rows=1 loops=600)
+                 Buffers: shared hit=4196
+                 ->  CTE Scan on rendimiento f  (cost=0.00..15.18 rows=1 width=32) (actual time=0.002..0.148 rows=30 loops=600)
+                       Filter: ((id_finca = r.id_finca) AND (campania = r.campania))
+                       Rows Removed by Filter: 570
+                       Buffers: shared hit=4196
+ Planning:
+   Buffers: shared hit=58
+ Planning Time: 3.454 ms
+ Execution Time: 103.191 ms
+(32 rows)
+
+Fin: 2026-11-03T19:39:36.101072-03:00 | Código: 0
