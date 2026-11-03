@@ -1,0 +1,78 @@
+Inicio: 2026-11-03T20:06:30.232593-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < consultas/pruebas/d1.sql
+BEGIN;
+BEGIN
+CREATE TEMP TABLE d1_ventas AS
+WITH altas AS (
+  INSERT INTO comprobante(id_cliente,id_sala,fecha)
+  VALUES ((SELECT min(id_cliente) FROM socio),1,CURRENT_DATE-interval '6 years'),
+         ((SELECT min(id_cliente) FROM socio),1,CURRENT_DATE-interval '5 years'),
+         ((SELECT min(id_cliente) FROM exportador),1,CURRENT_DATE-interval '6 years')
+  RETURNING *
+)
+SELECT a.*, (s.id_cliente IS NOT NULL AND fecha<CURRENT_DATE-interval '5 years') objetivo
+FROM altas a LEFT JOIN socio s USING(id_cliente);
+SELECT 3
+INSERT INTO renglon_comprobante(nro_comprobante,cod_vino,cantidad)
+SELECT nro_comprobante,1,1 FROM d1_ventas;
+INSERT 0 3
+CREATE TEMP TABLE d1_stock AS TABLE stock_sala;
+SELECT 3000
+SELECT objetivo,count(*) FROM d1_ventas GROUP BY objetivo;
+ objetivo | count 
+----------+-------
+ f        |     2
+ t        |     1
+(2 rows)
+
+ALTER TABLE comprobante DISABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+ALTER TABLE renglon_comprobante DISABLE TRIGGER trg_renglon_venta_inmutable;
+ALTER TABLE
+DELETE FROM comprobante c USING d1_ventas v,socio s
+WHERE c.nro_comprobante=v.nro_comprobante AND c.id_cliente=s.id_cliente
+AND c.fecha<CURRENT_DATE-interval '5 years';
+DELETE 1
+ALTER TABLE comprobante ENABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+ALTER TABLE renglon_comprobante ENABLE TRIGGER trg_renglon_venta_inmutable;
+ALTER TABLE
+CREATE TEMP TABLE d1_resultado AS
+SELECT v.objetivo,count(c.nro_comprobante) cabeceras,count(r.nro_comprobante) renglones
+FROM d1_ventas v LEFT JOIN comprobante c USING(nro_comprobante)
+LEFT JOIN renglon_comprobante r USING(nro_comprobante) GROUP BY v.objetivo;
+SELECT 2
+TABLE d1_resultado;
+ objetivo | cabeceras | renglones 
+----------+-----------+-----------
+ f        |         2 |         2
+ t        |         0 |         0
+(2 rows)
+
+SELECT NOT EXISTS ((TABLE d1_stock EXCEPT TABLE stock_sala)
+UNION ALL (TABLE stock_sala EXCEPT TABLE d1_stock)) stock_intacto;
+ stock_intacto 
+---------------
+ t
+(1 row)
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM d1_resultado WHERE objetivo AND cabeceras=0 AND renglones=0)
+     OR NOT EXISTS (SELECT FROM d1_resultado WHERE NOT objetivo AND cabeceras=2 AND renglones=2)
+     OR EXISTS ((TABLE d1_stock EXCEPT TABLE stock_sala) UNION ALL (TABLE stock_sala EXCEPT TABLE d1_stock)) THEN
+    RAISE EXCEPTION 'Falló el caso D1';
+  END IF;
+END $$;
+DO
+SELECT tgname,tgenabled FROM pg_trigger
+WHERE tgname IN ('trg_comprobante_inmutable','trg_renglon_venta_inmutable');
+           tgname            | tgenabled 
+-----------------------------+-----------
+ trg_comprobante_inmutable   | O
+ trg_renglon_venta_inmutable | O
+(2 rows)
+
+ROLLBACK;
+ROLLBACK
+Fin: 2026-11-03T20:06:32.128756-03:00 | Código: 0

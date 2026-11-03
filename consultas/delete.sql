@@ -2,13 +2,9 @@
 -- El purgado es de archivo y conserva stock. Requiere dueño de tablas.
 BEGIN;
 SELECT count(*) FROM comprobante c JOIN socio s USING(id_cliente) WHERE c.fecha<CURRENT_DATE-interval '5 years';
--- Cambiar el umbral de demostración si la base no tiene ventas de cinco años.
 CREATE TEMP TABLE purga AS
 SELECT c.nro_comprobante FROM comprobante c JOIN socio s USING(id_cliente)
-WHERE c.fecha < CURRENT_DATE - CASE WHEN EXISTS (
-  SELECT FROM comprobante h JOIN socio j USING(id_cliente)
-  WHERE h.fecha<CURRENT_DATE-interval '5 years'
-) THEN interval '5 years' ELSE interval '1 year' END;
+WHERE c.fecha < CURRENT_DATE - interval '5 years';
 CREATE TEMP TABLE stock_antes AS SELECT * FROM stock_sala;
 SELECT count(*) cabeceras FROM purga;
 SELECT count(*) renglones FROM renglon_comprobante JOIN purga USING(nro_comprobante);
