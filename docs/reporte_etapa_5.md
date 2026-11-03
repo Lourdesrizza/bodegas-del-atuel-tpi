@@ -67,17 +67,93 @@ Rama `etapa-5-consultas`, con las 30 consignas de la sección 8. Este archivo re
 
 - El [control posterior](evidencias_etapa_5/control_final.log) devolvió 20 controles en cero, los tres triggers habilitados, ningún permiso de demostración, ninguna columna temporal de descuento y el CHECK original de 30 %.
 
+### Fechas y ventanas al cierre
+
+Fecha de referencia de PostgreSQL: 2026-11-03.
+
+| Tabla y columna | MIN | MAX |
+|---|---|---|
+| comprobante.fecha | 2025-04-01 | 2026-10-28 |
+| transferencia.fecha_confeccion | 2025-03-01 | 2025-03-01 |
+| ingreso.fecha | 2025-01-15 | 2025-01-15 |
+
+| Consigna con CURRENT_DATE | Filas devueltas o insertadas | Filas de origen relevantes |
+|---|---:|---|
+| S3 | 3 | 8 comprobantes en la sala 1 |
+| S4 | 0 | Sin transferencias en la ventana |
+| S7 | 0 | Sin ingresos en la ventana |
+| S8 | 25 | 22.851 comprobantes trimestrales |
+| I1 | 0 insertadas | 0 ingresos trimestrales y la cobertura ganadora ya existe |
+
+Las consignas mantienen CURRENT_DATE. Para comparar antes y después de etapa 4, repetir las mismas [variantes históricas](../consultas/linea_base.sql) y el ANALYZE en ambos escenarios. La [medición histórica sin índices de etapa 4](evidencias_etapa_5/linea_base_historica.log) registró:
+
+| Variante | Ventana | Filas del nodo superior | Tiempo |
+|---|---|---:|---:|
+| S1 | 2026-07-28 a 2026-10-28, inclusive | 10 | 164,827 ms |
+| S4 | 2025-02-16 a 2025-03-02, inclusive | 5 | 0,513 ms |
+| S8 | 2026-07-28 a 2026-10-28, inclusive | 25 | 53,640 ms |
+| S10 | Cosechas de 2024 | 600 | 103,191 ms |
+
+### Estado después de ROLLBACK y regresión
+
+[Controles de cierre](evidencias_etapa_5/controles_cierre.log) registra `tipo_cliente_check` con 30 % para exportadores, 150.000 comprobantes, 500.000 renglones y los 18 triggers de usuario con `tgenabled = O`. La [suite completa](evidencias_etapa_5/db_tests_cierre.log) aplicó 001–007 y ejecutó `tests/db_tests.sql` sin cambios, con código 0 y parada ante errores, sobre la base nueva `atuel_etapa5_regresion_test` del mismo servidor de laboratorio.
+
+### S12 original y reformulada
+
+La primera variante cruza los clientes con los vinos objetivo y vuelve a buscar la compra para cada par. La segunda agrupa las compras objetivo una vez por cliente antes de hacer la división. La parte de clientes sin compras de tintos es idéntica en ambas.
+
+**Original**
+
+```sql
+WITH objetivo AS (
+  SELECT cod_vino FROM vino
+  WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)
+)
+SELECT cl.id_cliente FROM cliente cl
+WHERE EXISTS (SELECT FROM objetivo)
+  AND NOT EXISTS (
+    SELECT FROM objetivo v WHERE NOT EXISTS (
+      SELECT FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante)
+      WHERE c.id_cliente=cl.id_cliente AND r.cod_vino=v.cod_vino
+    )
+  )
+ORDER BY cl.id_cliente;
+```
+
+**Reformulada**
+
+```sql
+WITH objetivo AS (
+  SELECT cod_vino FROM vino
+  WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)
+), compras AS (
+  SELECT c.id_cliente,array_agg(DISTINCT r.cod_vino) vinos
+  FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante)
+  JOIN objetivo v USING(cod_vino)
+  GROUP BY c.id_cliente
+)
+SELECT c.id_cliente FROM compras c
+WHERE NOT EXISTS (
+  SELECT FROM objetivo v WHERE NOT EXISTS (
+    SELECT FROM unnest(c.vinos) compra(cod_vino) WHERE compra.cod_vino=v.cod_vino
+  )
+)
+ORDER BY c.id_cliente;
+```
+
+Para la misma bodega, ambas devolvieron 0 filas y EXCEPT devolvió 0 en cada sentido. La [prueba de equivalencia](evidencias_etapa_5/equivalencia_s12.log) usó un índice auxiliar únicamente para ejecutar la versión original. El índice se creó después de medir las variantes históricas y se revirtió con ROLLBACK. La parte común de tintos devolvió 226 clientes.
+
 ## Cosas no verificadas
 
 - La propuesta 009 quedó sin aplicar. Falta la decisión docente sobre la vigencia de la excepción al perder permisos.
-- S4 y S7 devolvieron cero filas con las ventanas temporales vigentes. S4 se midió con ese resultado y su tiempo describe esa distribución de datos.
-- Falta la comparación de rendimiento con índices de etapa 4.
+- S4 y S7 devolvieron cero filas con las ventanas temporales vigentes. La variante histórica de S4 mide una ventana con transferencias.
+- Falta la comparación de rendimiento con índices de etapa 4 y la prueba TCP con `app_rw` desde la terminal del usuario.
 
 ## Riesgos
 
 - El historial tiene fechas fijas en el generador. U6 encontró cero candidatos reales. El ensayo adicional insertó permisos ficticios para un solo exportador y revirtió todo al final.
 - ALTER TABLE toma bloqueos sobre tablas. Ejecutar los ensayos en una base de laboratorio aislada. ROLLBACK revierte las filas y el DDL, mientras que los valores consumidos de secuencias pueden dejar huecos.
-- El historial Git contiene commits que tocaron `.env`. La etapa 5 conserva el historial y no imprime su contenido. La presencia histórica de valores reales queda sin verificar.
+- El commit inicial `0167fae` incluyó por error un `.env` de desarrollo local. Según la verificación del grupo, contenía únicamente configuración y una contraseña local de desarrollo, sin credenciales reales. Se retiró del índice en `98b6877` durante la etapa 3. Se conservó el historial porque los datos eran de desarrollo local y el grupo decidió preservar los commits existentes. Para evitar repetirlo, `.gitignore` excluye `.env`, las claves se mantienen en el entorno y el repositorio conserva solo la plantilla `.env.example`. El [control Git](evidencias_etapa_5/gitignore_cierre.log) registra la regla, la plantilla permitida y el índice actual.
 
 ## Preguntas de defensa
 
