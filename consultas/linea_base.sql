@@ -1,8 +1,10 @@
 -- Variantes históricas para repetir la comparación con los mismos parámetros.
 -- Ejecutar en laboratorio y comprobar el catálogo de índices.
+SELECT CURRENT_DATE fecha_de_ejecucion;
+SELECT * FROM pg_indexes WHERE schemaname='public' ORDER BY tablename,indexname;
 ANALYZE comprobante, renglon_comprobante, vino, sala_venta, transferencia,
         renglon_transferencia, lote_uva, parcela;
--- S1 · Ventas del trimestre histórico
+-- S1 histórica · Ranking trimestral, distinto del ranking general oficial.
 EXPLAIN (ANALYZE, BUFFERS)
 SELECT v.cod_vino,v.nombre,sum(r.cantidad) botellas FROM vino v JOIN renglon_comprobante r USING(cod_vino) JOIN comprobante c USING(nro_comprobante) WHERE c.fecha BETWEEN DATE '2026-07-28' AND DATE '2026-10-28' GROUP BY v.cod_vino ORDER BY botellas DESC,v.cod_vino LIMIT 10;
 
