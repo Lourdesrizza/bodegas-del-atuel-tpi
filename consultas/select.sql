@@ -82,10 +82,40 @@ WITH meses AS (SELECT id_sala,date_trunc('month',fecha)::date mes,sum(total) tot
 
 -- S12 · Clientes que compraron todos los vinos de una bodega y clientes sin compras de tintos
 -- Doble NOT EXISTS para la bodega y anti-join para tintos. Cambiar el selector de bodega.
-WITH objetivo AS (SELECT cod_vino FROM vino WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)) SELECT cl.id_cliente FROM cliente cl WHERE EXISTS (SELECT FROM objetivo) AND NOT EXISTS (SELECT FROM objetivo v WHERE NOT EXISTS (SELECT FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante) WHERE c.id_cliente=cl.id_cliente AND r.cod_vino=v.cod_vino)) ORDER BY cl.id_cliente;
+WITH objetivo AS (
+  SELECT cod_vino FROM vino
+  WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)
+), compras AS (
+  SELECT c.id_cliente,array_agg(DISTINCT r.cod_vino) vinos
+  FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante)
+  JOIN objetivo v USING(cod_vino)
+  GROUP BY c.id_cliente
+)
+SELECT c.id_cliente FROM compras c
+WHERE NOT EXISTS (
+  SELECT FROM objetivo v WHERE NOT EXISTS (
+    SELECT FROM unnest(c.vinos) compra(cod_vino) WHERE compra.cod_vino=v.cod_vino
+  )
+)
+ORDER BY c.id_cliente;
 \if :{?medir}
 EXPLAIN (ANALYZE, BUFFERS)
-WITH objetivo AS (SELECT cod_vino FROM vino WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)) SELECT cl.id_cliente FROM cliente cl WHERE EXISTS (SELECT FROM objetivo) AND NOT EXISTS (SELECT FROM objetivo v WHERE NOT EXISTS (SELECT FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante) WHERE c.id_cliente=cl.id_cliente AND r.cod_vino=v.cod_vino)) ORDER BY cl.id_cliente;
+WITH objetivo AS (
+  SELECT cod_vino FROM vino
+  WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)
+), compras AS (
+  SELECT c.id_cliente,array_agg(DISTINCT r.cod_vino) vinos
+  FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante)
+  JOIN objetivo v USING(cod_vino)
+  GROUP BY c.id_cliente
+)
+SELECT c.id_cliente FROM compras c
+WHERE NOT EXISTS (
+  SELECT FROM objetivo v WHERE NOT EXISTS (
+    SELECT FROM unnest(c.vinos) compra(cod_vino) WHERE compra.cod_vino=v.cod_vino
+  )
+)
+ORDER BY c.id_cliente;
 \endif
 
 WITH compradores_tinto AS (SELECT DISTINCT c.id_cliente FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante) JOIN vino v USING(cod_vino) WHERE v.tipo='tinto') SELECT cl.id_cliente FROM cliente cl LEFT JOIN compradores_tinto t USING(id_cliente) WHERE t.id_cliente IS NULL ORDER BY cl.id_cliente;
