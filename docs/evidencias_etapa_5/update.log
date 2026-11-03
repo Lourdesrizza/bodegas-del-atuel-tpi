@@ -1,0 +1,153 @@
+Inicio: 2026-11-03T19:25:53.899167-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -v medir=1 -P pager=off -a < consultas\update.sql
+-- U1 · Recalcular el total de todos los comprobantes
+-- Usa el descuento histórico aplicado a los renglones. Actualiza solo diferencias. Requiere dueño de tablas.
+BEGIN;
+BEGIN
+SELECT count(*) comprobantes,count(*) FILTER (WHERE c.total IS DISTINCT FROM f.total) diferencias
+FROM comprobante c CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f;
+ comprobantes | diferencias 
+--------------+-------------
+       150000 |           0
+(1 row)
+
+ALTER TABLE comprobante DISABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+ALTER TABLE renglon_comprobante DISABLE TRIGGER trg_renglon_venta_inmutable;
+ALTER TABLE
+WITH calculados AS (
+  SELECT c.nro_comprobante,f.total FROM comprobante c
+  CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f
+)
+UPDATE comprobante c SET total=x.total FROM calculados x
+WHERE c.nro_comprobante=x.nro_comprobante AND c.total IS DISTINCT FROM x.total;
+UPDATE 0
+SELECT count(*) comprobantes,count(*) FILTER (WHERE c.total IS DISTINCT FROM f.total) diferencias
+FROM comprobante c CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f;
+ comprobantes | diferencias 
+--------------+-------------
+       150000 |           0
+(1 row)
+
+ALTER TABLE comprobante ENABLE TRIGGER trg_comprobante_inmutable;
+ALTER TABLE
+ALTER TABLE renglon_comprobante ENABLE TRIGGER trg_renglon_venta_inmutable;
+ALTER TABLE
+ROLLBACK;
+ROLLBACK
+-- U2 · Aumentar 20 % el salario con más de cinco años de antigüedad
+-- Compara la fecha exacta con el umbral relativo.
+BEGIN;
+BEGIN
+SELECT count(*),sum(salario) FROM empleado WHERE fecha_ingreso<CURRENT_DATE-interval '5 years';
+ count |     sum     
+-------+-------------
+    50 | 25127500.00
+(1 row)
+
+UPDATE empleado SET salario=round(salario*1.20,2) WHERE fecha_ingreso<CURRENT_DATE-interval '5 years';
+UPDATE 50
+SELECT count(*),sum(salario) FROM empleado WHERE fecha_ingreso<CURRENT_DATE-interval '5 years';
+ count |     sum     
+-------+-------------
+    50 | 30153000.00
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- U3 · Aumentar 13 % el precio de los vinos de una bodega
+-- Cambiar el selector de bodega. El trigger registra los cambios de precio.
+BEGIN;
+BEGIN
+SELECT count(*),sum(precio) FROM vino WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1);
+ count |   sum    
+-------+----------
+    30 | 33256.00
+(1 row)
+
+UPDATE vino SET precio=round(precio*1.13,2) WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1);
+UPDATE 30
+SELECT count(*),sum(precio) FROM vino WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1);
+ count |   sum    
+-------+----------
+    30 | 37579.28
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- U4 · Intercambiar lunes y miércoles como día de cierre
+-- CASE evalúa el valor original en una sola sentencia.
+BEGIN;
+BEGIN
+SELECT dia_cierre,count(*) FROM sala_venta WHERE lower(dia_cierre) IN ('lunes','miércoles','miercoles') GROUP BY dia_cierre;
+ dia_cierre | count 
+------------+-------
+ Lunes      |     8
+ Miércoles  |     9
+(2 rows)
+
+UPDATE sala_venta SET dia_cierre=CASE WHEN lower(dia_cierre)='lunes' THEN 'Miércoles' ELSE 'Lunes' END WHERE lower(dia_cierre) IN ('lunes','miércoles','miercoles');
+UPDATE 17
+SELECT dia_cierre,count(*) FROM sala_venta WHERE lower(dia_cierre) IN ('lunes','miércoles','miercoles') GROUP BY dia_cierre;
+ dia_cierre | count 
+------------+-------
+ Lunes      |     9
+ Miércoles  |     8
+(2 rows)
+
+ROLLBACK;
+ROLLBACK
+-- U5 · Reducir 15 % el precio de los diez vinos menos vendidos
+-- Incluye vinos sin ventas y desempata por código.
+BEGIN;
+BEGIN
+SELECT cod_vino,precio FROM vino WHERE cod_vino IN (SELECT v.cod_vino FROM vino v LEFT JOIN renglon_comprobante r USING(cod_vino)
+GROUP BY v.cod_vino ORDER BY coalesce(sum(r.cantidad),0),v.cod_vino LIMIT 10) ORDER BY cod_vino;
+ cod_vino | precio  
+----------+---------
+      101 | 1707.00
+      102 | 1714.00
+      103 | 1721.00
+      104 | 1728.00
+      105 | 1735.00
+      106 | 1742.00
+      107 | 1749.00
+      108 | 1756.00
+      109 | 1763.00
+      110 | 1770.00
+(10 rows)
+
+UPDATE vino SET precio=round(precio*0.85,2) WHERE cod_vino IN (SELECT v.cod_vino FROM vino v LEFT JOIN renglon_comprobante r USING(cod_vino)
+GROUP BY v.cod_vino ORDER BY coalesce(sum(r.cantidad),0),v.cod_vino LIMIT 10);
+UPDATE 10
+SELECT cod_vino,precio FROM vino WHERE cod_vino IN (SELECT v.cod_vino FROM vino v LEFT JOIN renglon_comprobante r USING(cod_vino)
+GROUP BY v.cod_vino ORDER BY coalesce(sum(r.cantidad),0),v.cod_vino LIMIT 10) ORDER BY cod_vino;
+ cod_vino | precio  
+----------+---------
+      101 | 1450.95
+      102 | 1456.90
+      103 | 1462.85
+      104 | 1468.80
+      105 | 1474.75
+      106 | 1480.70
+      107 | 1486.65
+      108 | 1492.60
+      109 | 1498.55
+      110 | 1504.50
+(10 rows)
+
+ROLLBACK;
+ROLLBACK
+-- U6 · Subir a 35 % el descuento de exportadores con más de tres permisos
+-- RN-06 fija 30 %. El catálogo es compartido. Una columna temporal por exportador
+-- permite demostrar la excepción sin subir el descuento del resto.
+BEGIN;
+BEGIN
+ALTER TABLE tipo_cliente DROP CONSTRAINT tipo_cliente_descuento_check,
+  ADD CONSTRAINT tipo_cliente_descuento_check CHECK (
+    (tipo_cliente='socio' AND descuento=10) OR
+    (tipo_cliente='distribuidor' AND descuento=20) OR
+    (tipo_cliente='exportador' AND descuento IN (30,35)));
+ERROR:  constraint "tipo_cliente_descuento_check" of relation "tipo_cliente" does not exist
+Fin: 2026-11-03T19:26:54.078071-03:00 | Código: 3

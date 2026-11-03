@@ -2,52 +2,52 @@
 
 ## Resumen
 
-Rama `etapa-5-consultas`, con las 30 consignas de la sección 8. Este archivo reúne el informe y el reporte auditable. La fase A se omitió porque falta `008_indices.sql`. La validación en PostgreSQL queda pendiente de los datos de conexión de la base de laboratorio.
+Rama `etapa-5-consultas`, con las 30 consignas de la sección 8. Este archivo reúne el informe y el reporte auditable. La fase A se omitió porque falta `008_indices.sql`. Las pruebas se ejecutaron el 3 de noviembre de 2026 en `atuel_base_test`, PostgreSQL 16.15, con 500.000 renglones de venta. El acceso se hizo por el socket del contenedor de laboratorio tras verificar que publica en 55441. El proceso que ejecutó psql desde el host no recibió la variable de contraseña.
 
 ## Tabla de criterios de aceptación
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Las 30 consignas tienen código, enunciado y estrategia | OK en revisión estática | Cuatro archivos SQL |
-| DML con controles previos y posteriores, transacción y ROLLBACK | OK en estructura, pendiente en ejecución | UPDATE, INSERT y DELETE |
-| Filas afectadas, datos concretos y comportamiento real de triggers | Pendiente | Sin logs PostgreSQL |
-| Avanzadas con vista, CTE, ventanas, correlación y división según corresponda | OK en revisión estática | S9–S12 |
-| EXPLAIN ANALYZE de las consultas candidatas y avanzadas | Pendiente | Modo `-v medir=1` de select.sql |
+| Las 30 consignas tienen código, enunciado y estrategia | OK | Cuatro archivos SQL |
+| DML con controles previos y posteriores, transacción y ROLLBACK | OK | UPDATE, INSERT y DELETE |
+| Filas afectadas, datos concretos y comportamiento real de triggers | OK | Logs PostgreSQL por archivo |
+| Avanzadas con vista, CTE, ventanas, correlación y división según corresponda | OK | S9–S12 |
+| EXPLAIN ANALYZE de las consultas candidatas y avanzadas | OK | Nueve planes en select_final.log |
 
 ## Tabla por consigna
 
 | Código | Archivo y línea | Filas afectadas o devueltas |
 |---|---|---|
-| U1 | [update.sql:1](../consultas/update.sql#L1) | Pendiente |
-| U2 | [update.sql:20](../consultas/update.sql#L20) | Pendiente |
-| U3 | [update.sql:28](../consultas/update.sql#L28) | Pendiente |
-| U4 | [update.sql:36](../consultas/update.sql#L36) | Pendiente |
-| U5 | [update.sql:44](../consultas/update.sql#L44) | Pendiente |
-| U6 | [update.sql:55](../consultas/update.sql#L55) | Pendiente |
-| I1 | [insert.sql:1](../consultas/insert.sql#L1) | Pendiente |
-| I2 | [insert.sql:18](../consultas/insert.sql#L18) | Pendiente |
-| I3 | [insert.sql:33](../consultas/insert.sql#L33) | Pendiente |
-| I4 | [insert.sql:58](../consultas/insert.sql#L58) | Pendiente |
-| I5 | [insert.sql:66](../consultas/insert.sql#L66) | Pendiente |
-| I6 | [insert.sql:74](../consultas/insert.sql#L74) | Pendiente |
-| D1 | [delete.sql:1](../consultas/delete.sql#L1) | Pendiente |
-| D2 | [delete.sql:29](../consultas/delete.sql#L29) | Pendiente |
-| D3 | [delete.sql:37](../consultas/delete.sql#L37) | Pendiente |
-| D4 | [delete.sql:45](../consultas/delete.sql#L45) | Pendiente |
-| D5 | [delete.sql:53](../consultas/delete.sql#L53) | Pendiente |
-| D6 | [delete.sql:63](../consultas/delete.sql#L63) | Pendiente |
-| S1 | [select.sql:3](../consultas/select.sql#L3) | Pendiente |
-| S2 | [select.sql:11](../consultas/select.sql#L11) | Pendiente |
-| S3 | [select.sql:15](../consultas/select.sql#L15) | Pendiente |
-| S4 | [select.sql:19](../consultas/select.sql#L19) | Pendiente |
-| S5 | [select.sql:27](../consultas/select.sql#L27) | Pendiente |
-| S6 | [select.sql:31](../consultas/select.sql#L31) | Pendiente |
-| S7 | [select.sql:35](../consultas/select.sql#L35) | Pendiente |
-| S8 | [select.sql:39](../consultas/select.sql#L39) | Pendiente |
-| S9 | [select.sql:47](../consultas/select.sql#L47) | Pendiente |
-| S10 | [select.sql:61](../consultas/select.sql#L61) | Pendiente |
-| S11 | [select.sql:69](../consultas/select.sql#L69) | Pendiente |
-| S12 | [select.sql:83](../consultas/select.sql#L83) | Pendiente |
+| U1 | [update.sql:1](../consultas/update.sql#L1) | 0 de 150.000 evaluados |
+| U2 | [update.sql:20](../consultas/update.sql#L20) | 50 |
+| U3 | [update.sql:28](../consultas/update.sql#L28) | 30 |
+| U4 | [update.sql:36](../consultas/update.sql#L36) | 17 |
+| U5 | [update.sql:44](../consultas/update.sql#L44) | 10 |
+| U6 | [update.sql:55](../consultas/update.sql#L55) | 0 de la carga, 1 en la demostración |
+| I1 | [insert.sql:1](../consultas/insert.sql#L1) | 0, cobertura existente |
+| I2 | [insert.sql:18](../consultas/insert.sql#L18) | 1 maridaje y 90 asociaciones |
+| I3 | [insert.sql:33](../consultas/insert.sql#L33) | 1 cabecera y 3 renglones |
+| I4 | [insert.sql:58](../consultas/insert.sql#L58) | 1 |
+| I5 | [insert.sql:66](../consultas/insert.sql#L66) | 1 |
+| I6 | [insert.sql:74](../consultas/insert.sql#L74) | 1 cabecera y 1 renglón de 120 botellas |
+| D1 | [delete.sql:1](../consultas/delete.sql#L1) | 0 con cinco años, 33.822 cabeceras y 112.822 renglones con un año |
+| D2 | [delete.sql:29](../consultas/delete.sql#L29) | 0 |
+| D3 | [delete.sql:37](../consultas/delete.sql#L37) | 0 |
+| D4 | [delete.sql:45](../consultas/delete.sql#L45) | 0 |
+| D5 | [delete.sql:53](../consultas/delete.sql#L53) | 600 cabeceras |
+| D6 | [delete.sql:63](../consultas/delete.sql#L63) | 1 cliente |
+| S1 | [select.sql:3](../consultas/select.sql#L3) | 10 |
+| S2 | [select.sql:11](../consultas/select.sql#L11) | 100 |
+| S3 | [select.sql:15](../consultas/select.sql#L15) | 3 |
+| S4 | [select.sql:19](../consultas/select.sql#L19) | 0 |
+| S5 | [select.sql:27](../consultas/select.sql#L27) | 25 |
+| S6 | [select.sql:31](../consultas/select.sql#L31) | 0 |
+| S7 | [select.sql:35](../consultas/select.sql#L35) | 0 |
+| S8 | [select.sql:39](../consultas/select.sql#L39) | 25 |
+| S9 | [select.sql:47](../consultas/select.sql#L47) | 1 |
+| S10 | [select.sql:61](../consultas/select.sql#L61) | 3.000 |
+| S11 | [select.sql:69](../consultas/select.sql#L69) | 2.500 para ranking y 475 para acumulado |
+| S12 | [select.sql:83](../consultas/select.sql#L83) | 0 para división y 226 sin compras de tintos |
 
 ## Decisiones y ambigüedades
 
@@ -58,15 +58,24 @@ Rama `etapa-5-consultas`, con las 30 consignas de la sección 8. Este archivo re
 - I1 cuenta transportistas con cero envíos y desempata por código. Una cobertura ya existente puede dar cero inserciones. S7 mide actividad por número de ingresos.
 - S3 y S4 incluyen el día actual. S7 y S8 usan meses calendario móviles. S10 compara parcelas de la misma finca y campaña, ponderando cada parcela por igual.
 
+## Evidencia y línea base
+
+- [UPDATE final](evidencias_etapa_5/update_final.log), [INSERT](evidencias_etapa_5/insert.log), [DELETE](evidencias_etapa_5/delete.log) y [SELECT final](evidencias_etapa_5/select_final.log) registran comandos, hora y salida.
+- En I3 el total guardado coincidió con la función (2.738,70) y el stock bajó de 10 a 9 para cada uno de los tres vinos. En D1 el control de stock dio verdadero.
+- El primer UPDATE se detuvo en U6 porque el nombre del CHECK inferido era incorrecto. Se consultó el catálogo, se corrigió a `tipo_cliente_check` y se repitió el archivo. El primer SELECT se canceló en S12. La versión final agrupa primero las compras por cliente y conserva la división con doble NOT EXISTS.
+- S1, S4, S8 y S10 constituyen la línea base sin índices de etapa 4. El [catálogo previo](evidencias_etapa_5/preflight.log) registró 36 índices de claves y unicidad preexistentes. Sus tiempos de ejecución fueron 116,215 ms, 0,128 ms, 53,184 ms y 686,706 ms, respectivamente. Son mediciones de una corrida.
+
+- El [control posterior](evidencias_etapa_5/control_final.log) devolvió 20 controles en cero, los tres triggers habilitados, ningún permiso de demostración, ninguna columna temporal de descuento y el CHECK original de 30 %.
+
 ## Cosas no verificadas
 
-- U1–U6, I1–I6, D1–D6 y S1–S12 siguen pendientes de ejecución. Falta confirmar puerto, usuario, base con sufijo de laboratorio y nombre de variable de contraseña.
-- Los EXPLAIN de S1, S4, S8 y S10 se definieron como línea base sin los índices de la etapa 4. Para identificarlos como tal, se debe verificar el catálogo de índices de la base antes de medir. También faltan los planes de S9, S11 y S12.
-- Los códigos elegidos se contrastaron con el generador. Falta comprobar filas, restricciones y resultados en la carga real. Los logs se guardarán en `docs/evidencias_etapa_5/`.
+- La propuesta 009 quedó sin aplicar. Falta la decisión docente sobre la vigencia de la excepción al perder permisos.
+- S4 y S7 devolvieron cero filas con las ventanas temporales vigentes. S4 se midió con ese resultado y su tiempo describe esa distribución de datos.
+- Falta la comparación de rendimiento con índices de etapa 4.
 
 ## Riesgos
 
-- El historial de ventas e ingresos tiene fechas fijas en el generador. Las ventanas relativas pueden quedar vacías y U6 puede tener cero candidatos porque la carga genera un permiso por exportador.
+- El historial tiene fechas fijas en el generador. U6 encontró cero candidatos reales. El ensayo adicional insertó permisos ficticios para un solo exportador y revirtió todo al final.
 - ALTER TABLE toma bloqueos sobre tablas. Ejecutar los ensayos en una base de laboratorio aislada. ROLLBACK revierte las filas y el DDL, mientras que los valores consumidos de secuencias pueden dejar huecos.
 - El historial Git contiene commits que tocaron `.env`. La etapa 5 conserva el historial y no imprime su contenido. La presencia histórica de valores reales queda sin verificar.
 

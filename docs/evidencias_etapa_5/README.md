@@ -6,4 +6,4 @@
 .\consultas\verificar.ps1 -Puerto PUERTO -Usuario USUARIO -Base BASE_test -VariableClave VARIABLE
 ```
 
-Estado actual: pendiente de conexión. El directorio todavía no contiene salidas de PostgreSQL.
+Resultados en PostgreSQL 16.15 sobre atuel_base_test. preflight.log comprueba la carga y los índices. update_final.log, insert.log, delete.log y select_final.log son las corridas aceptadas. update.log y select.log conservan los primeros intentos, y control_final.log registra el control posterior. Los comandos de los logs usan el socket del contenedor aislado que publica en 55441.

@@ -1,0 +1,182 @@
+Inicio: 2026-11-03T19:26:54.106458-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -v medir=1 -P pager=off -a < consultas\insert.sql
+-- I1 · Dar cobertura a General Alvear con el transportista de menor actividad trimestral
+-- LEFT JOIN incluye cero viajes y el código desempata. Si ya cubre la localidad, no se duplica.
+BEGIN;
+BEGIN
+SELECT * FROM transportista_localidad WHERE cod_transportista=(SELECT t.cod_transportista
+FROM transportista t LEFT JOIN ingreso i ON i.cod_transportista=t.cod_transportista
+ AND i.fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE
+GROUP BY t.cod_transportista ORDER BY count(i.cod_ingreso),t.cod_transportista LIMIT 1) AND id_localidad IN (SELECT id_localidad FROM localidad WHERE nombre='General Alvear' AND provincia='Mendoza');
+ cod_transportista | id_localidad 
+-------------------+--------------
+                 1 |            2
+(1 row)
+
+INSERT INTO transportista_localidad SELECT t.cod_transportista,l.id_localidad FROM (SELECT t.cod_transportista
+FROM transportista t LEFT JOIN ingreso i ON i.cod_transportista=t.cod_transportista
+ AND i.fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE
+GROUP BY t.cod_transportista ORDER BY count(i.cod_ingreso),t.cod_transportista LIMIT 1) t CROSS JOIN (SELECT id_localidad FROM localidad WHERE nombre='General Alvear' AND provincia='Mendoza') l ON CONFLICT DO NOTHING;
+INSERT 0 0
+SELECT * FROM transportista_localidad WHERE cod_transportista=(SELECT t.cod_transportista
+FROM transportista t LEFT JOIN ingreso i ON i.cod_transportista=t.cod_transportista
+ AND i.fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE
+GROUP BY t.cod_transportista ORDER BY count(i.cod_ingreso),t.cod_transportista LIMIT 1) AND id_localidad IN (SELECT id_localidad FROM localidad WHERE nombre='General Alvear' AND provincia='Mendoza');
+ cod_transportista | id_localidad 
+-------------------+--------------
+                 1 |            2
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- I2 · Crear cordero al disco y asociarlo a tintos desde 14 grados
+-- Reutiliza el maridaje si existe. Temperatura elegida: 17 °C.
+BEGIN;
+BEGIN
+SELECT count(*) candidatos FROM vino WHERE tipo='tinto' AND graduacion>=14;
+ candidatos 
+------------
+         90
+(1 row)
+
+SELECT count(*) asociaciones FROM vino_maridaje JOIN maridaje USING(id_maridaje) WHERE nombre='cordero al disco';
+ asociaciones 
+--------------
+            0
+(1 row)
+
+INSERT INTO maridaje(nombre,temperatura_servicio)
+SELECT 'cordero al disco',17 WHERE EXISTS (SELECT FROM vino WHERE tipo='tinto' AND graduacion>=14)
+AND NOT EXISTS (SELECT FROM maridaje WHERE nombre='cordero al disco');
+INSERT 0 1
+INSERT INTO vino_maridaje(cod_vino,id_maridaje)
+SELECT v.cod_vino,m.id_maridaje FROM vino v CROSS JOIN maridaje m
+WHERE v.tipo='tinto' AND v.graduacion>=14 AND m.nombre='cordero al disco'
+ON CONFLICT DO NOTHING;
+INSERT 0 90
+SELECT count(*) asociaciones FROM vino_maridaje JOIN maridaje USING(id_maridaje) WHERE nombre='cordero al disco';
+ asociaciones 
+--------------
+           90
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- I3 · Crear venta de tres vinos para un cliente en sala 1
+-- Cambiar cliente y sala en la cabecera y sala en la selección de stock.
+-- El trigger asigna precio y descuento y actualiza stock e importes.
+BEGIN;
+BEGIN
+CREATE TEMP TABLE vinos_venta AS SELECT cod_vino,cantidad FROM stock_sala
+WHERE id_sala=1 AND cantidad>0 ORDER BY cod_vino LIMIT 3;
+SELECT 3
+SELECT * FROM vinos_venta ORDER BY cod_vino;
+ cod_vino | cantidad 
+----------+----------
+        1 |       10
+        2 |       10
+        3 |       10
+(3 rows)
+
+DO $$ BEGIN
+  IF (SELECT count(*) FROM vinos_venta) <> 3 THEN
+    RAISE EXCEPTION 'I3 requiere tres vinos con stock disponible';
+  END IF;
+END $$;
+DO
+CREATE TEMP TABLE venta_nueva AS
+WITH alta AS (INSERT INTO comprobante(id_cliente,id_sala,fecha)
+VALUES (1,1,CURRENT_DATE) RETURNING nro_comprobante)
+SELECT * FROM alta;
+SELECT 1
+INSERT INTO renglon_comprobante(nro_comprobante,cod_vino,cantidad)
+SELECT n.nro_comprobante,v.cod_vino,1 FROM venta_nueva n CROSS JOIN vinos_venta v;
+INSERT 0 3
+SELECT c.nro_comprobante,c.total,f.total AS total_calculado
+FROM comprobante c JOIN venta_nueva USING(nro_comprobante)
+CROSS JOIN LATERAL fn_total_comprobante(c.nro_comprobante) f;
+ nro_comprobante |  total  | total_calculado 
+-----------------+---------+-----------------
+          150001 | 2738.70 |         2738.70
+(1 row)
+
+SELECT s.cod_vino,v.cantidad AS antes,s.cantidad AS despues
+FROM stock_sala s JOIN vinos_venta v USING(cod_vino) WHERE s.id_sala=1;
+ cod_vino | antes | despues 
+----------+-------+---------
+        1 |    10 |       9
+        2 |    10 |       9
+        3 |    10 |       9
+(3 rows)
+
+ROLLBACK;
+ROLLBACK
+-- I4 · Insertar una bodega nueva
+-- Alta con un CUIT ficticio de once dígitos.
+BEGIN;
+BEGIN
+SELECT * FROM bodega WHERE cuit='30999999991';
+ cuit | razon_social | domicilio 
+------+--------------+-----------
+(0 rows)
+
+INSERT INTO bodega(cuit,razon_social,domicilio) VALUES ('30999999991','Bodega de prueba I4','Calle de Prueba 100');
+INSERT 0 1
+SELECT * FROM bodega WHERE cuit='30999999991';
+    cuit     |    razon_social     |      domicilio      
+-------------+---------------------+---------------------
+ 30999999991 | Bodega de prueba I4 | Calle de Prueba 100
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- I5 · Insertar una sala de venta
+-- Cambiar la localidad de referencia. El encargado se obtiene de localidad.
+BEGIN;
+BEGIN
+SELECT * FROM sala_venta WHERE calle='Calle de Prueba I5' AND numero='100';
+ id_sala | id_localidad | calle | numero | dia_cierre 
+---------+--------------+-------+--------+------------
+(0 rows)
+
+INSERT INTO sala_venta(id_localidad,calle,numero,dia_cierre) VALUES (1,'Calle de Prueba I5','100','Lunes');
+INSERT 0 1
+SELECT * FROM sala_venta WHERE calle='Calle de Prueba I5' AND numero='100';
+ id_sala | id_localidad |       calle        | numero | dia_cierre 
+---------+--------------+--------------------+--------+------------
+      26 |            1 | Calle de Prueba I5 | 100    | Lunes
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+-- I6 · Crear un ingreso en confección por 120 botellas
+-- Cambiar vino 1 y transportista 1. La bodega se toma del vino.
+BEGIN;
+BEGIN
+SELECT v.cod_vino,v.nombre,v.cuit_bodega,d.cantidad stock_antes
+FROM vino v LEFT JOIN stock_deposito d USING(cod_vino) WHERE v.cod_vino=1;
+ cod_vino |       nombre       | cuit_bodega | stock_antes 
+----------+--------------------+-------------+-------------
+        1 | Vino Ficticio 0001 | 30100000001 |          50
+(1 row)
+
+CREATE TEMP TABLE ingreso_nuevo AS
+WITH alta AS (INSERT INTO ingreso(cuit_bodega,cod_transportista,fecha)
+SELECT cuit_bodega,1,CURRENT_DATE FROM vino WHERE cod_vino=1 RETURNING cod_ingreso)
+SELECT * FROM alta;
+SELECT 1
+INSERT INTO renglon_ingreso(cod_ingreso,cod_vino,cantidad)
+SELECT cod_ingreso,1,120 FROM ingreso_nuevo;
+INSERT 0 1
+SELECT i.cod_ingreso,i.estado,r.cod_vino,r.cantidad,d.cantidad stock_despues
+FROM ingreso_nuevo JOIN ingreso i USING(cod_ingreso) JOIN renglon_ingreso r USING(cod_ingreso)
+LEFT JOIN stock_deposito d USING(cod_vino);
+ cod_ingreso |    estado     | cod_vino | cantidad | stock_despues 
+-------------+---------------+----------+----------+---------------
+         601 | en_confeccion |        1 |      120 |            50
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+Fin: 2026-11-03T19:26:54.592057-03:00 | Código: 0
