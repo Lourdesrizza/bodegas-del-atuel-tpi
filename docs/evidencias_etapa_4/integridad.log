@@ -1,0 +1,57 @@
+-- Huella por tabla y orden de clave primaria. Se ejecuta en ambos clones.
+SELECT 'cliente' tabla,count(*),md5(string_agg(md5(t::text),'' ORDER BY id_cliente)) huella FROM cliente t
+UNION ALL SELECT 'tipo_cliente',count(*),md5(string_agg(md5(t::text),'' ORDER BY tipo_cliente)) FROM tipo_cliente t
+UNION ALL SELECT 'comprobante',count(*),md5(string_agg(md5(t::text),'' ORDER BY nro_comprobante)) FROM comprobante t
+UNION ALL SELECT 'renglon_comprobante',count(*),md5(string_agg(md5(t::text),'' ORDER BY nro_comprobante,cod_vino)) FROM renglon_comprobante t
+UNION ALL SELECT 'vino',count(*),md5(string_agg(md5(t::text),'' ORDER BY cod_vino)) FROM vino t
+UNION ALL SELECT 'transferencia',count(*),md5(string_agg(md5(t::text),'' ORDER BY nro_solicitud)) FROM transferencia t
+UNION ALL SELECT 'renglon_transferencia',count(*),md5(string_agg(md5(t::text),'' ORDER BY nro_solicitud,cod_vino)) FROM renglon_transferencia t
+UNION ALL SELECT 'sala_venta',count(*),md5(string_agg(md5(t::text),'' ORDER BY id_sala)) FROM sala_venta t
+UNION ALL SELECT 'lote_uva',count(*),md5(string_agg(md5(t::text),'' ORDER BY nro_lote)) FROM lote_uva t
+UNION ALL SELECT 'parcela',count(*),md5(string_agg(md5(t::text),'' ORDER BY id_finca,nro_parcela)) FROM parcela t
+UNION ALL SELECT 'ingreso',count(*),md5(string_agg(md5(t::text),'' ORDER BY cod_ingreso)) FROM ingreso t
+ORDER BY 1;
+
+atuel_base_test
+tabla,count,huella
+cliente,20000,4233e737bd74d820d68f504e2010df39
+comprobante,150000,e00de7a99256731f227c6d74e3977c1f
+ingreso,600,a2fbe43cc977df718d0cc63a88948667
+lote_uva,3000,64662122f6775b262fe360c160d0011f
+parcela,600,c4a43765085eaa9e34f3a34c0092cc32
+renglon_comprobante,500000,63636591977e05a15edfa15d27a87595
+renglon_transferencia,3000,540c91d08cf65fa78d5013d63f736171
+sala_venta,25,db817c8bf62d8aecdbac58e73c460ef4
+tipo_cliente,3,522653135c671862667f6a18a6be4241
+transferencia,600,9d78c480b7bf27cb3a81d378bf22a13a
+vino,600,a5d246ea1e8789434c74f2e223e17677
+
+atuel_e4m_sin_test
+tabla,count,huella
+cliente,20000,4233e737bd74d820d68f504e2010df39
+comprobante,150000,e00de7a99256731f227c6d74e3977c1f
+ingreso,600,a2fbe43cc977df718d0cc63a88948667
+lote_uva,3000,64662122f6775b262fe360c160d0011f
+parcela,600,c4a43765085eaa9e34f3a34c0092cc32
+renglon_comprobante,500000,63636591977e05a15edfa15d27a87595
+renglon_transferencia,3000,540c91d08cf65fa78d5013d63f736171
+sala_venta,25,db817c8bf62d8aecdbac58e73c460ef4
+tipo_cliente,3,522653135c671862667f6a18a6be4241
+transferencia,600,9d78c480b7bf27cb3a81d378bf22a13a
+vino,600,a5d246ea1e8789434c74f2e223e17677
+
+atuel_e4m_con_test
+tabla,count,huella
+cliente,20000,4233e737bd74d820d68f504e2010df39
+comprobante,150000,e00de7a99256731f227c6d74e3977c1f
+ingreso,600,a2fbe43cc977df718d0cc63a88948667
+lote_uva,3000,64662122f6775b262fe360c160d0011f
+parcela,600,c4a43765085eaa9e34f3a34c0092cc32
+renglon_comprobante,500000,63636591977e05a15edfa15d27a87595
+renglon_transferencia,3000,540c91d08cf65fa78d5013d63f736171
+sala_venta,25,db817c8bf62d8aecdbac58e73c460ef4
+tipo_cliente,3,522653135c671862667f6a18a6be4241
+transferencia,600,9d78c480b7bf27cb3a81d378bf22a13a
+vino,600,a5d246ea1e8789434c74f2e223e17677
+
+Huellas y conteos idénticos: True

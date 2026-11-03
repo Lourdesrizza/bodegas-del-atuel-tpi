@@ -1,0 +1,82 @@
+-- Candidato descartado. Se prueba aislado contra el B-tree elegido para S8.
+BEGIN;
+BEGIN
+SELECT attname, correlation FROM pg_stats
+WHERE schemaname='public' AND tablename='comprobante' AND attname='fecha';
+ attname |  correlation
+---------+---------------
+ fecha   | -0.0037556367
+(1 row)
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT s.id_sala,coalesce(sum(c.total),0) total
+FROM sala_venta s LEFT JOIN comprobante c ON c.id_sala=s.id_sala
+  AND c.fecha BETWEEN DATE '2026-07-28' AND DATE '2026-10-28'
+GROUP BY s.id_sala ORDER BY total DESC,s.id_sala;
+                                                              QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=3737.27..3737.33 rows=25 width=36) (actual time=21.669..21.673 rows=25 loops=1)
+   Sort Key: (COALESCE(sum(c.total), '0'::numeric)) DESC, s.id_sala
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=1295
+   ->  HashAggregate  (cost=3736.38..3736.69 rows=25 width=36) (actual time=21.582..21.590 rows=25 loops=1)
+         Group Key: s.id_sala
+         Batches: 1  Memory Usage: 32kB
+         Buffers: shared hit=1289
+         ->  Hash Right Join  (cost=1.56..3614.44 rows=24388 width=11) (actual time=0.053..16.203 rows=24454 loops=1)
+               Hash Cond: (c.id_sala = s.id_sala)
+               Buffers: shared hit=1289
+               ->  Seq Scan on comprobante c  (cost=0.00..3538.00 rows=24388 width=11) (actual time=0.012..11.733 rows=24454 loops=1)
+                     Filter: ((fecha >= '2026-07-28'::date) AND (fecha <= '2026-10-28'::date))
+                     Rows Removed by Filter: 125546
+                     Buffers: shared hit=1288
+               ->  Hash  (cost=1.25..1.25 rows=25 width=4) (actual time=0.018..0.019 rows=25 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=1
+                     ->  Seq Scan on sala_venta s  (cost=0.00..1.25 rows=25 width=4) (actual time=0.006..0.008 rows=25 loops=1)
+                           Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=128
+ Planning Time: 1.693 ms
+ Execution Time: 21.783 ms
+(24 rows)
+
+CREATE INDEX candidato_comprobante_fecha_brin ON comprobante USING brin(fecha);
+CREATE INDEX
+ANALYZE comprobante;
+ANALYZE
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT s.id_sala,coalesce(sum(c.total),0) total
+FROM sala_venta s LEFT JOIN comprobante c ON c.id_sala=s.id_sala
+  AND c.fecha BETWEEN DATE '2026-07-28' AND DATE '2026-10-28'
+GROUP BY s.id_sala ORDER BY total DESC,s.id_sala;
+                                                              QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=3741.43..3741.49 rows=25 width=36) (actual time=19.774..19.778 rows=25 loops=1)
+   Sort Key: (COALESCE(sum(c.total), '0'::numeric)) DESC, s.id_sala
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=1289
+   ->  HashAggregate  (cost=3740.54..3740.85 rows=25 width=36) (actual time=19.747..19.755 rows=25 loops=1)
+         Group Key: s.id_sala
+         Batches: 1  Memory Usage: 32kB
+         Buffers: shared hit=1289
+         ->  Hash Right Join  (cost=1.56..3616.02 rows=24904 width=11) (actual time=0.137..14.788 rows=24454 loops=1)
+               Hash Cond: (c.id_sala = s.id_sala)
+               Buffers: shared hit=1289
+               ->  Seq Scan on comprobante c  (cost=0.00..3538.00 rows=24904 width=11) (actual time=0.012..10.391 rows=24454 loops=1)
+                     Filter: ((fecha >= '2026-07-28'::date) AND (fecha <= '2026-10-28'::date))
+                     Rows Removed by Filter: 125546
+                     Buffers: shared hit=1288
+               ->  Hash  (cost=1.25..1.25 rows=25 width=4) (actual time=0.041..0.042 rows=25 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=1
+                     ->  Seq Scan on sala_venta s  (cost=0.00..1.25 rows=25 width=4) (actual time=0.012..0.016 rows=25 loops=1)
+                           Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=25
+ Planning Time: 1.497 ms
+ Execution Time: 19.921 ms
+(24 rows)
+
+ROLLBACK;
+ROLLBACK

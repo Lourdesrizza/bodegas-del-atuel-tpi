@@ -1,0 +1,1660 @@
+
+atuel_e4m_sin_test · 001_esquema.sql
+-- ============================================================================
+-- PROYECTO: Bodegas del Atuel
+-- ETAPA 1: Esquema Físico Base (001_esquema.sql)
+-- ============================================================================
+-- Migración de creación: ejecutar sólo en una base nueva y exclusiva.
+-- No borra tablas preexistentes.
+CREATE TYPE estado_documento AS ENUM ('en_confeccion', 'terminado', 'procesado');
+CREATE TYPE
+CREATE DOMAIN cuit_dom AS CHAR(11) CHECK (VALUE ~ '^[0-9]{11}$');
+CREATE DOMAIN
+-- ----------------------------------------------------------------------------
+-- 1. LOCALIZACIÓN, SALAS Y PERSONAL
+-- ----------------------------------------------------------------------------
+CREATE TABLE localidad (
+    id_localidad SERIAL PRIMARY KEY,
+    codigo_postal VARCHAR(10) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    provincia VARCHAR(100) NOT NULL,
+    encargado_regional VARCHAR(150) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE sala_venta (
+    id_sala SERIAL PRIMARY KEY,
+    id_localidad INTEGER NOT NULL REFERENCES localidad(id_localidad),
+    calle VARCHAR(100) NOT NULL,
+    numero VARCHAR(20) NOT NULL,
+    dia_cierre VARCHAR(20) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE empleado (
+    cuit cuit_dom PRIMARY KEY,
+    id_sala INTEGER NOT NULL REFERENCES sala_venta(id_sala),
+    nombre VARCHAR(150) NOT NULL,
+    fecha_ingreso DATE NOT NULL,
+    salario NUMERIC(12, 2) NOT NULL
+);
+CREATE TABLE
+-- ----------------------------------------------------------------------------
+-- 2. PRODUCCIÓN AGRÍCOLA Y COSECHA
+-- ----------------------------------------------------------------------------
+CREATE TABLE finca (
+    id_finca SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    superficie_ha NUMERIC(8, 2) NOT NULL,
+    departamento VARCHAR(100) NOT NULL,
+    provincia VARCHAR(100) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE cepa (
+    id_cepa SERIAL PRIMARY KEY,
+    nombre VARCHAR(80) NOT NULL,
+    tipo VARCHAR(20) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE parcela (
+    id_finca INTEGER NOT NULL REFERENCES finca(id_finca),
+    nro_parcela INTEGER NOT NULL,
+    id_cepa INTEGER NOT NULL REFERENCES cepa(id_cepa),
+    superficie NUMERIC(8, 2) NOT NULL,
+    anio_plantacion SMALLINT NOT NULL,
+    PRIMARY KEY (id_finca, nro_parcela)
+);
+CREATE TABLE
+CREATE TABLE bodega (
+    cuit cuit_dom PRIMARY KEY,
+    razon_social VARCHAR(150) NOT NULL,
+    domicilio VARCHAR(200) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE lote_uva (
+    nro_lote SERIAL PRIMARY KEY,
+    id_finca INTEGER NOT NULL,
+    nro_parcela INTEGER NOT NULL,
+    cuit_bodega cuit_dom NOT NULL REFERENCES bodega(cuit),
+    campania SMALLINT NOT NULL,
+    fecha_cosecha DATE NOT NULL,
+    kilos NUMERIC(10, 2) NOT NULL,
+    FOREIGN KEY (id_finca, nro_parcela) REFERENCES parcela(id_finca, nro_parcela)
+);
+CREATE TABLE
+CREATE TABLE analisis_calidad (
+    id_analisis SERIAL PRIMARY KEY,
+    nro_lote INTEGER NOT NULL REFERENCES lote_uva(nro_lote),
+    fecha DATE NOT NULL,
+    brix NUMERIC(4, 2) NOT NULL,
+    ph NUMERIC(3, 2) NOT NULL,
+    acidez_total NUMERIC(5, 2) NOT NULL
+);
+CREATE TABLE
+-- ----------------------------------------------------------------------------
+-- 3. VINOS, COMPOSICIÓN Y MARIDAJE
+-- ----------------------------------------------------------------------------
+CREATE TABLE vino (
+    cod_vino SERIAL PRIMARY KEY,
+    cuit_bodega cuit_dom NOT NULL REFERENCES bodega(cuit),
+    nombre VARCHAR(120) NOT NULL,
+    tipo VARCHAR(30) NOT NULL,
+    anada SMALLINT NOT NULL,
+    volumen_ml INTEGER NOT NULL,
+    graduacion NUMERIC(4, 2) NOT NULL,
+    precio NUMERIC(10, 2) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE composicion (
+    cod_vino INTEGER NOT NULL REFERENCES vino(cod_vino),
+    id_cepa INTEGER NOT NULL REFERENCES cepa(id_cepa),
+    porcentaje NUMERIC(5, 2) NOT NULL,
+    PRIMARY KEY (cod_vino, id_cepa)
+);
+CREATE TABLE
+CREATE TABLE maridaje (
+    id_maridaje SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    temperatura_servicio NUMERIC(4, 1) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE vino_maridaje (
+    cod_vino INTEGER NOT NULL REFERENCES vino(cod_vino),
+    id_maridaje INTEGER NOT NULL REFERENCES maridaje(id_maridaje),
+    PRIMARY KEY (cod_vino, id_maridaje)
+);
+CREATE TABLE
+-- ----------------------------------------------------------------------------
+-- 4. CLIENTES Y ESTRUCTURA DE SUBTIPOS
+-- ----------------------------------------------------------------------------
+CREATE TABLE tipo_cliente (
+    tipo_cliente VARCHAR(30) PRIMARY KEY,
+    descuento NUMERIC(5, 2) NOT NULL CHECK (
+      (tipo_cliente='socio' AND descuento=10) OR
+      (tipo_cliente='distribuidor' AND descuento=20) OR
+      (tipo_cliente='exportador' AND descuento=30))
+);
+CREATE TABLE
+INSERT INTO tipo_cliente VALUES ('socio', 10), ('distribuidor', 20), ('exportador', 30);
+INSERT 0 3
+CREATE TABLE cliente (
+    id_cliente SERIAL PRIMARY KEY,
+    id_localidad INTEGER NOT NULL REFERENCES localidad(id_localidad),
+    nombre_o_razon_social VARCHAR(150) NOT NULL,
+    tipo_doc VARCHAR(20) NOT NULL,
+    numero_doc VARCHAR(30) NOT NULL,
+    domicilio VARCHAR(200) NOT NULL,
+    fecha_alta DATE NOT NULL,
+    tipo_cliente VARCHAR(30) NOT NULL REFERENCES tipo_cliente(tipo_cliente)
+);
+CREATE TABLE
+CREATE TABLE socio (
+    id_cliente INTEGER PRIMARY KEY REFERENCES cliente(id_cliente)
+);
+CREATE TABLE
+CREATE TABLE distribuidor (
+    id_cliente INTEGER PRIMARY KEY REFERENCES cliente(id_cliente),
+    zona_cobertura VARCHAR(150) NOT NULL,
+    nro_habilitacion VARCHAR(50) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE exportador (
+    id_cliente INTEGER PRIMARY KEY REFERENCES cliente(id_cliente),
+    pais_destino VARCHAR(100) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE permiso_exportacion (
+    cod_permiso VARCHAR(50) PRIMARY KEY,
+    id_cliente INTEGER NOT NULL REFERENCES exportador(id_cliente),
+    fecha_emision DATE NOT NULL,
+    fecha_vencimiento DATE NOT NULL
+);
+CREATE TABLE
+-- ----------------------------------------------------------------------------
+-- 5. LOGÍSTICA, TRANSPORTE Y STOCKS
+-- ----------------------------------------------------------------------------
+CREATE TABLE transportista (
+    cod_transportista SERIAL PRIMARY KEY,
+    cuit cuit_dom NOT NULL,
+    razon_social VARCHAR(150) NOT NULL,
+    domicilio VARCHAR(200) NOT NULL,
+    email VARCHAR(120) NOT NULL,
+    telefono VARCHAR(50) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE transportista_localidad (
+    cod_transportista INTEGER NOT NULL REFERENCES transportista(cod_transportista),
+    id_localidad INTEGER NOT NULL REFERENCES localidad(id_localidad),
+    PRIMARY KEY (cod_transportista, id_localidad)
+);
+CREATE TABLE
+CREATE TABLE stock_deposito (
+    cod_vino INTEGER PRIMARY KEY REFERENCES vino(cod_vino),
+    cantidad INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE
+CREATE TABLE stock_sala (
+    id_sala INTEGER NOT NULL REFERENCES sala_venta(id_sala),
+    cod_vino INTEGER NOT NULL REFERENCES vino(cod_vino),
+    cantidad INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (id_sala, cod_vino)
+);
+CREATE TABLE
+-- ----------------------------------------------------------------------------
+-- 6. INGRESOS, TRANSFERENCIAS Y COMPROBANTES DE VENTA
+-- ----------------------------------------------------------------------------
+CREATE TABLE ingreso (
+    cod_ingreso SERIAL PRIMARY KEY,
+    cuit_bodega cuit_dom NOT NULL REFERENCES bodega(cuit),
+    cod_transportista INTEGER NOT NULL REFERENCES transportista(cod_transportista),
+    fecha DATE NOT NULL,
+    estado estado_documento NOT NULL DEFAULT 'en_confeccion'
+);
+CREATE TABLE
+CREATE TABLE renglon_ingreso (
+    cod_ingreso INTEGER NOT NULL REFERENCES ingreso(cod_ingreso),
+    cod_vino INTEGER NOT NULL REFERENCES vino(cod_vino),
+    cantidad INTEGER NOT NULL,
+    PRIMARY KEY (cod_ingreso, cod_vino)
+);
+CREATE TABLE
+CREATE TABLE transferencia (
+    nro_solicitud SERIAL PRIMARY KEY,
+    id_sala INTEGER NOT NULL REFERENCES sala_venta(id_sala),
+    fecha_confeccion DATE NOT NULL,
+    estado estado_documento NOT NULL DEFAULT 'en_confeccion'
+);
+CREATE TABLE
+CREATE TABLE renglon_transferencia (
+    nro_solicitud INTEGER NOT NULL REFERENCES transferencia(nro_solicitud),
+    cod_vino INTEGER NOT NULL REFERENCES vino(cod_vino),
+    cantidad INTEGER NOT NULL,
+    PRIMARY KEY (nro_solicitud, cod_vino)
+);
+CREATE TABLE
+CREATE TABLE comprobante (
+    nro_comprobante SERIAL PRIMARY KEY,
+    id_cliente INTEGER NOT NULL REFERENCES cliente(id_cliente),
+    id_sala INTEGER NOT NULL REFERENCES sala_venta(id_sala),
+    fecha DATE NOT NULL,
+    subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    descuento NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    total NUMERIC(12, 2) NOT NULL DEFAULT 0
+);
+CREATE TABLE
+CREATE TABLE renglon_comprobante (
+    nro_comprobante INTEGER NOT NULL REFERENCES comprobante(nro_comprobante),
+    cod_vino INTEGER NOT NULL REFERENCES vino(cod_vino),
+    cantidad INTEGER NOT NULL,
+    precio_unitario NUMERIC(10, 2) NOT NULL,
+    descuento_aplicado NUMERIC(5, 2) NOT NULL,
+    subtotal_renglon NUMERIC(12, 2) NOT NULL,
+    PRIMARY KEY (nro_comprobante, cod_vino)
+);
+CREATE TABLE
+CREATE TABLE auditoria_precio (
+    id_auditoria SERIAL PRIMARY KEY,
+    cod_vino INTEGER NOT NULL REFERENCES vino(cod_vino),
+    precio_anterior NUMERIC(10, 2) NOT NULL,
+    precio_nuevo NUMERIC(10, 2) NOT NULL,
+    fecha_hora TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usuario VARCHAR(100) NOT NULL
+);
+CREATE TABLE
+
+atuel_e4m_sin_test · 002_constraints.sql
+-- ============================================================================
+-- PROYECTO: Bodegas del Atuel
+-- ETAPA 2: Integridad y Restricciones Declarativas (002_constraints.sql)
+-- ============================================================================
+-- ----------------------------------------------------------------------------
+-- 1. TIPOS PROPIOS Y DOMINIOS
+-- ----------------------------------------------------------------------------
+-- Se crean antes de las tablas en 001. No se repiten conversiones.
+-- ----------------------------------------------------------------------------
+-- 2. VALORES POR DEFECTO (DEFAULT)
+-- ----------------------------------------------------------------------------
+ALTER TABLE cliente
+    ALTER COLUMN fecha_alta SET DEFAULT CURRENT_DATE;
+ALTER TABLE
+ALTER TABLE comprobante
+    ALTER COLUMN fecha SET DEFAULT CURRENT_DATE;
+ALTER TABLE
+ALTER TABLE ingreso
+    ALTER COLUMN fecha SET DEFAULT CURRENT_DATE,
+    ALTER COLUMN estado SET DEFAULT 'en_confeccion'::estado_documento;
+ALTER TABLE
+ALTER TABLE transferencia
+    ALTER COLUMN fecha_confeccion SET DEFAULT CURRENT_DATE,
+    ALTER COLUMN estado SET DEFAULT 'en_confeccion'::estado_documento;
+ALTER TABLE
+ALTER TABLE auditoria_precio
+    ALTER COLUMN fecha_hora SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE
+-- ----------------------------------------------------------------------------
+-- 3. RESTRICCIONES DE UNICIDAD (UNIQUE)
+-- ----------------------------------------------------------------------------
+-- Unicidad del vino: no pueden coexistir vinos con mismo nombre, añada y volumen
+ALTER TABLE vino
+    ADD CONSTRAINT uq_vino_nombre_anada_volumen UNIQUE (nombre, anada, volumen_ml);
+ALTER TABLE
+-- RN-04: Una parcela se cosecha como máximo una vez por campaña
+ALTER TABLE lote_uva
+    ADD CONSTRAINT uq_lote_parcela_campania UNIQUE (id_finca, nro_parcela, campania);
+ALTER TABLE
+-- CUIT único por transportista
+ALTER TABLE transportista
+    ADD CONSTRAINT uq_transportista_cuit UNIQUE (cuit);
+ALTER TABLE
+-- Documento único por cliente
+ALTER TABLE cliente
+    ADD CONSTRAINT uq_cliente_documento UNIQUE (tipo_doc, numero_doc);
+ALTER TABLE
+-- Razón social única de bodegas
+ALTER TABLE bodega
+    ADD CONSTRAINT uq_bodega_razon_social UNIQUE (razon_social);
+ALTER TABLE
+-- ----------------------------------------------------------------------------
+-- 4. RESTRICCIONES DE CHEQUEO (CHECK)
+-- ----------------------------------------------------------------------------
+-- RN-01 y RN-15: El precio del vino es mayor que cero
+ALTER TABLE vino
+    ADD CONSTRAINT ck_vino_precio_positivo CHECK (precio > 0);
+ALTER TABLE
+-- RN-15: Graduación alcohólica válida entre 5° y 20°
+ALTER TABLE vino
+    ADD CONSTRAINT ck_vino_graduacion_rango CHECK (graduacion BETWEEN 5.00 AND 20.00);
+ALTER TABLE
+-- Tipo de vino controlado
+ALTER TABLE vino
+    ADD CONSTRAINT ck_vino_tipo_valido CHECK (tipo IN ('tinto', 'blanco', 'rosado', 'espumante'));
+ALTER TABLE
+-- Presentaciones de volumen permitidas (en ml)
+ALTER TABLE vino
+    ADD CONSTRAINT ck_vino_volumen_valido CHECK (volumen_ml IN (187, 375, 750, 1500, 3000));
+ALTER TABLE
+-- Añadas razonables
+ALTER TABLE vino
+    ADD CONSTRAINT ck_vino_anada_valida CHECK (anada BETWEEN 1990 AND 2100);
+ALTER TABLE
+-- RN-07: Verificación entre columnas en permisos (vencimiento posterior a emisión)
+ALTER TABLE permiso_exportacion
+    ADD CONSTRAINT ck_permiso_fechas CHECK (fecha_vencimiento > fecha_emision);
+ALTER TABLE
+-- RN-09 y RN-15: El stock nunca es negativo
+ALTER TABLE stock_sala
+    ADD CONSTRAINT ck_stock_sala_no_negativo CHECK (cantidad >= 0);
+ALTER TABLE
+ALTER TABLE stock_deposito
+    ADD CONSTRAINT ck_stock_deposito_no_negativo CHECK (cantidad >= 0);
+ALTER TABLE
+-- Porcentaje individual de cepa en la composición (la suma de 100 se valida en trigger)
+ALTER TABLE composicion
+    ADD CONSTRAINT ck_composicion_porcentaje CHECK (porcentaje > 0 AND porcentaje <= 100);
+ALTER TABLE
+-- Cantidades en renglones estrictamente positivas
+ALTER TABLE renglon_comprobante
+    ADD CONSTRAINT ck_renglon_comprobante_cantidad CHECK (cantidad > 0);
+ALTER TABLE
+ALTER TABLE renglon_ingreso
+    ADD CONSTRAINT ck_renglon_ingreso_cantidad CHECK (cantidad > 0);
+ALTER TABLE
+ALTER TABLE renglon_transferencia
+    ADD CONSTRAINT ck_renglon_transferencia_cantidad CHECK (cantidad > 0);
+ALTER TABLE
+-- Salarios, superficies y kilos positivos (RN-15)
+ALTER TABLE empleado
+    ADD CONSTRAINT ck_empleado_salario_positivo CHECK (salario > 0);
+ALTER TABLE
+ALTER TABLE finca
+    ADD CONSTRAINT ck_finca_superficie_positiva CHECK (superficie_ha > 0);
+ALTER TABLE
+ALTER TABLE parcela
+    ADD CONSTRAINT ck_parcela_superficie_positiva CHECK (superficie > 0);
+ALTER TABLE
+ALTER TABLE lote_uva
+    ADD CONSTRAINT ck_lote_kilos_positivos CHECK (kilos > 0);
+ALTER TABLE
+-- Parámetros enológicos de análisis de calidad
+ALTER TABLE analisis_calidad
+    ADD CONSTRAINT ck_analisis_brix CHECK (brix >= 0),
+    ADD CONSTRAINT ck_analisis_ph CHECK (ph BETWEEN 0.00 AND 14.00),
+    ADD CONSTRAINT ck_analisis_acidez CHECK (acidez_total >= 0);
+ALTER TABLE
+-- RN-06: cliente referencia el catálogo tipo_cliente; descuento no se duplica.
+-- ----------------------------------------------------------------------------
+-- 5. ACCIONES REFERENCIALES (ON DELETE / ON UPDATE)
+-- ----------------------------------------------------------------------------
+-- RN-14: No se puede borrar una bodega, transportista o vino con movimientos (RESTRICT)
+ALTER TABLE vino
+    DROP CONSTRAINT IF EXISTS vino_cuit_bodega_fkey,
+    ADD CONSTRAINT fk_vino_bodega
+        FOREIGN KEY (cuit_bodega) REFERENCES bodega(cuit)
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE lote_uva
+    DROP CONSTRAINT IF EXISTS lote_uva_cuit_bodega_fkey,
+    ADD CONSTRAINT fk_lote_bodega
+        FOREIGN KEY (cuit_bodega) REFERENCES bodega(cuit)
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE ingreso
+    DROP CONSTRAINT IF EXISTS ingreso_cuit_bodega_fkey,
+    DROP CONSTRAINT IF EXISTS ingreso_cod_transportista_fkey,
+    ADD CONSTRAINT fk_ingreso_bodega
+        FOREIGN KEY (cuit_bodega) REFERENCES bodega(cuit)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    ADD CONSTRAINT fk_ingreso_transportista
+        FOREIGN KEY (cod_transportista) REFERENCES transportista(cod_transportista)
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE renglon_comprobante
+    DROP CONSTRAINT IF EXISTS renglon_comprobante_cod_vino_fkey,
+    ADD CONSTRAINT fk_renglon_vino
+        FOREIGN KEY (cod_vino) REFERENCES vino(cod_vino)
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE
+-- Tablas dependientes y renglones: si se elimina la cabecera, se eliminan los renglones (CASCADE)
+ALTER TABLE renglon_comprobante
+    DROP CONSTRAINT IF EXISTS renglon_comprobante_nro_comprobante_fkey,
+    ADD CONSTRAINT fk_renglon_comprobante_cabecera
+        FOREIGN KEY (nro_comprobante) REFERENCES comprobante(nro_comprobante)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE renglon_ingreso
+    DROP CONSTRAINT IF EXISTS renglon_ingreso_cod_ingreso_fkey,
+    ADD CONSTRAINT fk_renglon_ingreso_cabecera
+        FOREIGN KEY (cod_ingreso) REFERENCES ingreso(cod_ingreso)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE renglon_transferencia
+    DROP CONSTRAINT IF EXISTS renglon_transferencia_nro_solicitud_fkey,
+    ADD CONSTRAINT fk_renglon_transferencia_cabecera
+        FOREIGN KEY (nro_solicitud) REFERENCES transferencia(nro_solicitud)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE composicion
+    DROP CONSTRAINT IF EXISTS composicion_cod_vino_fkey,
+    ADD CONSTRAINT fk_composicion_vino
+        FOREIGN KEY (cod_vino) REFERENCES vino(cod_vino)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE vino_maridaje
+    DROP CONSTRAINT IF EXISTS vino_maridaje_cod_vino_fkey,
+    ADD CONSTRAINT fk_vino_maridaje_vino
+        FOREIGN KEY (cod_vino) REFERENCES vino(cod_vino)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE permiso_exportacion
+    DROP CONSTRAINT IF EXISTS permiso_exportacion_id_cliente_fkey,
+    ADD CONSTRAINT fk_permiso_exportador
+        FOREIGN KEY (id_cliente) REFERENCES exportador(id_cliente)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE socio
+    DROP CONSTRAINT IF EXISTS socio_id_cliente_fkey,
+    ADD CONSTRAINT fk_socio_cliente
+        FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE distribuidor
+    DROP CONSTRAINT IF EXISTS distribuidor_id_cliente_fkey,
+    ADD CONSTRAINT fk_distribuidor_cliente
+        FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+ALTER TABLE exportador
+    DROP CONSTRAINT IF EXISTS exportador_id_cliente_fkey,
+    ADD CONSTRAINT fk_exportador_cliente
+        FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente)
+        ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE
+
+atuel_e4m_sin_test · 003_funciones.sql
+-- ============================================================================
+-- PROYECTO: Bodegas del Atuel
+-- ETAPA 2: Funciones de Lógica y Cálculo (003_funciones.sql)
+-- ============================================================================
+-- ----------------------------------------------------------------------------
+-- 1. fn_descuento_cliente
+-- Propósito: Obtiene el porcentaje de descuento aplicable según el tipo de cliente (RN-06).
+-- Parámetros: p_id_cliente (INTEGER) -> Identificador del cliente.
+-- Retorno: NUMERIC(5, 2) -> Porcentaje de descuento (10.00, 20.00 o 30.00).
+-- Volatilidad: STABLE (consulta la tabla cliente; no modifica datos).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_descuento_cliente(p_id_cliente INTEGER)
+RETURNS NUMERIC(5, 2)
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_descuento NUMERIC(5, 2);
+BEGIN
+    SELECT t.descuento INTO v_descuento
+    FROM cliente c JOIN tipo_cliente t USING (tipo_cliente)
+    WHERE c.id_cliente = p_id_cliente;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El cliente con ID % no existe (RN-06)', p_id_cliente;
+    END IF;
+
+    RETURN v_descuento;
+END;
+$$;
+CREATE FUNCTION
+-- ----------------------------------------------------------------------------
+-- 2. fn_stock_sala
+-- Propósito: Consulta el stock disponible de un vino en una sala de venta específica (RN-09).
+--            Si no existe registro previo para ese vino en la sala, retorna 0.
+-- Parámetros: p_sala (INTEGER) -> ID de la sala de venta.
+--             p_vino (INTEGER) -> Código del vino.
+-- Retorno: INTEGER -> Cantidad de botellas disponibles.
+-- Volatilidad: STABLE (consulta la tabla stock_sala; no modifica datos).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_stock_sala(p_sala INTEGER, p_vino INTEGER)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT COALESCE(
+        (SELECT cantidad
+         FROM stock_sala
+         WHERE id_sala = p_sala AND cod_vino = p_vino),
+        0
+    );
+$$;
+CREATE FUNCTION
+-- ----------------------------------------------------------------------------
+-- 3. fn_antiguedad_anios
+-- Propósito: Calcula la antigüedad en años completos transcurridos entre una fecha y hoy.
+-- Parámetros: p_fecha (DATE) -> Fecha base (ej. ingreso laboral o alta).
+-- Retorno: INTEGER -> Años completos transcurridos.
+-- Volatilidad: STABLE (utiliza CURRENT_DATE, invariable dentro de la misma transacción).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_antiguedad_anios(p_fecha DATE)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT DATE_PART('year', AGE(CURRENT_DATE, p_fecha))::INTEGER;
+$$;
+CREATE FUNCTION
+-- ----------------------------------------------------------------------------
+-- 4. fn_total_comprobante
+-- Propósito: Calcula el subtotal bruto, el monto de descuento y el total neto
+--            de un comprobante sumando sus renglones (RN-08).
+-- Parámetros: p_nro_comprobante (INTEGER) -> Número del comprobante.
+-- Retorno: TABLE (subtotal NUMERIC, descuento NUMERIC, total NUMERIC)
+-- Volatilidad: STABLE (lee tablas comprobante y renglon_comprobante sin alterar datos).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_total_comprobante(p_nro_comprobante INTEGER)
+RETURNS TABLE (
+    subtotal NUMERIC(12, 2),
+    descuento NUMERIC(12, 2),
+    total NUMERIC(12, 2)
+)
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_subtotal_bruto NUMERIC(12, 2);
+    v_monto_descuento NUMERIC(12, 2);
+    v_total_neto NUMERIC(12, 2);
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM comprobante WHERE nro_comprobante = p_nro_comprobante) THEN
+        RAISE EXCEPTION 'El comprobante % no existe', p_nro_comprobante;
+    END IF;
+
+    -- Sumar los importes brutos (cantidad * precio_unitario) de los renglones
+    SELECT COALESCE(SUM(r.cantidad * r.precio_unitario), 0.00),
+           COALESCE(SUM(r.cantidad * r.precio_unitario - r.subtotal_renglon), 0.00),
+           COALESCE(SUM(r.subtotal_renglon), 0.00)
+    INTO v_subtotal_bruto, v_monto_descuento, v_total_neto
+    FROM renglon_comprobante r
+    WHERE r.nro_comprobante = p_nro_comprobante;
+
+    -- La suma de netos redondeados por renglón es la fuente de verdad.
+
+    RETURN QUERY SELECT v_subtotal_bruto, v_monto_descuento, v_total_neto;
+END;
+$$;
+CREATE FUNCTION
+
+atuel_e4m_sin_test · 004_procedimientos.sql
+-- ============================================================================
+-- PROYECTO: Bodegas del Atuel
+-- ETAPA 2: Procedimientos Almacenados Transaccionales (004_procedimientos.sql)
+-- ============================================================================
+-- ----------------------------------------------------------------------------
+-- 1. sp_procesar_ingreso
+-- Regla: RN-10 (Solo un ingreso terminado impacta en depósito y pasa a procesado)
+-- Propósito: Bloquea la cabecera del ingreso, verifica que esté 'terminado',
+--            suma las botellas de cada renglón a stock_deposito (creando el
+--            registro si aún no existía) y actualiza el estado a 'procesado'.
+-- Parámetros: p_cod_ingreso (INTEGER) -> Código del ingreso a procesar.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE sp_procesar_ingreso(p_cod_ingreso INTEGER)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_estado estado_documento;
+    v_cant_renglones INTEGER;
+    r RECORD;
+BEGIN
+    -- 1. Bloqueo pesimista de la fila del ingreso para evitar procesamiento concurrente
+    SELECT estado INTO v_estado
+    FROM ingreso
+    WHERE cod_ingreso = p_cod_ingreso
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El ingreso % no existe (RN-10)', p_cod_ingreso;
+    END IF;
+
+    -- 2. Validación de estado requerido
+    IF v_estado IS DISTINCT FROM 'terminado' THEN
+        RAISE EXCEPTION 'El ingreso % se encuentra en estado "%", pero debe estar "terminado" para procesarse (RN-10)',
+            p_cod_ingreso, v_estado;
+    END IF;
+
+    -- 3. Verificar que el documento contenga renglones
+    SELECT COUNT(*) INTO v_cant_renglones
+    FROM renglon_ingreso
+    WHERE cod_ingreso = p_cod_ingreso;
+
+    IF v_cant_renglones = 0 THEN
+        RAISE EXCEPTION 'El ingreso % no contiene renglones asociados para procesar', p_cod_ingreso;
+    END IF;
+
+    -- 4. Incrementar el stock del depósito central (crea la fila si no existía)
+    FOR r IN SELECT cod_vino,cantidad FROM renglon_ingreso
+             WHERE cod_ingreso=p_cod_ingreso ORDER BY cod_vino LOOP
+      INSERT INTO stock_deposito(cod_vino,cantidad) VALUES(r.cod_vino,r.cantidad)
+      ON CONFLICT(cod_vino) DO UPDATE SET cantidad=stock_deposito.cantidad+EXCLUDED.cantidad;
+    END LOOP;
+
+    -- 5. Transición definitiva de estado
+    UPDATE ingreso
+    SET estado = 'procesado'::estado_documento
+    WHERE cod_ingreso = p_cod_ingreso;
+
+    RAISE NOTICE 'Ingreso % procesado exitosamente.', p_cod_ingreso;
+END;
+$$;
+CREATE PROCEDURE
+-- ----------------------------------------------------------------------------
+-- 2. sp_procesar_transferencia
+-- Reglas: RN-09, RN-11 (Impacto atómico de transferencias entre depósito y sala)
+-- Propósito: Bloquea la transferencia, verifica estado 'terminado', controla que
+--            el depósito central cuente con existencias suficientes de cada vino,
+--            descuenta de depósito, suma al stock de la sala solicitante y pasa a 'procesado'.
+-- Parámetros: p_nro_solicitud (INTEGER) -> Número de transferencia.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE sp_procesar_transferencia(p_nro_solicitud INTEGER)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id_sala INTEGER;
+    v_estado estado_documento;
+    v_cant_renglones INTEGER;
+    r RECORD;
+    v_stock_deposito_actual INTEGER;
+BEGIN
+    -- 1. Bloqueo de la cabecera de la solicitud
+    SELECT id_sala, estado INTO v_id_sala, v_estado
+    FROM transferencia
+    WHERE nro_solicitud = p_nro_solicitud
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La transferencia % no existe (RN-11)', p_nro_solicitud;
+    END IF;
+
+    -- 2. Validación de estado requerido
+    IF v_estado IS DISTINCT FROM 'terminado' THEN
+        RAISE EXCEPTION 'La transferencia % se encuentra en estado "%", pero debe estar "terminado" para procesarse (RN-11)',
+            p_nro_solicitud, v_estado;
+    END IF;
+
+    -- 3. Verificar existencia de renglones
+    SELECT COUNT(*) INTO v_cant_renglones
+    FROM renglon_transferencia
+    WHERE nro_solicitud = p_nro_solicitud;
+
+    IF v_cant_renglones = 0 THEN
+        RAISE EXCEPTION 'La transferencia % no posee renglones asociados', p_nro_solicitud;
+    END IF;
+
+    -- 4. Verificación y bloqueo de stock en depósito central por cada vino
+    FOR r IN (
+        SELECT cod_vino, cantidad
+        FROM renglon_transferencia
+        WHERE nro_solicitud = p_nro_solicitud
+        ORDER BY cod_vino
+    ) LOOP
+        SELECT cantidad INTO v_stock_deposito_actual
+        FROM stock_deposito
+        WHERE cod_vino = r.cod_vino
+        FOR UPDATE;
+
+        IF NOT FOUND OR v_stock_deposito_actual < r.cantidad THEN
+            RAISE EXCEPTION 'Stock insuficiente en depósito central para el vino % (disponible: %, requerido: %) (RN-11)',
+                r.cod_vino, COALESCE(v_stock_deposito_actual, 0), r.cantidad;
+        END IF;
+    END LOOP;
+
+    -- 5. Descontar botellas de stock_deposito (usando alias rt)
+    FOR r IN SELECT cod_vino,cantidad FROM renglon_transferencia
+             WHERE nro_solicitud=p_nro_solicitud ORDER BY cod_vino LOOP
+      UPDATE stock_deposito SET cantidad=cantidad-r.cantidad WHERE cod_vino=r.cod_vino;
+      INSERT INTO stock_sala(id_sala,cod_vino,cantidad) VALUES(v_id_sala,r.cod_vino,r.cantidad)
+      ON CONFLICT(id_sala,cod_vino) DO UPDATE SET cantidad=stock_sala.cantidad+EXCLUDED.cantidad;
+    END LOOP;
+
+    -- 7. Transición definitiva de estado
+    UPDATE transferencia
+    SET estado = 'procesado'::estado_documento
+    WHERE nro_solicitud = p_nro_solicitud;
+
+    RAISE NOTICE 'Transferencia % procesada exitosamente para la sala %.', p_nro_solicitud, v_id_sala;
+END;
+$$;
+CREATE PROCEDURE
+CREATE OR REPLACE PROCEDURE sp_terminar_ingreso(p_id integer) LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE ingreso SET estado='terminado' WHERE cod_ingreso=p_id AND estado='en_confeccion';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Ingreso inexistente o no está en confección'; END IF;
+END $$;
+CREATE PROCEDURE
+CREATE OR REPLACE PROCEDURE sp_terminar_transferencia(p_id integer) LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE transferencia SET estado='terminado' WHERE nro_solicitud=p_id AND estado='en_confeccion';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Transferencia inexistente o no está en confección'; END IF;
+END $$;
+CREATE PROCEDURE
+
+atuel_e4m_sin_test · 005_triggers.sql
+-- ============================================================================
+-- PROYECTO: Bodegas del Atuel
+-- ETAPA 2: Triggers y Reglas de Negocio Dinámicas (005_triggers.sql)
+-- ============================================================================
+-- ----------------------------------------------------------------------------
+-- 1. VALIDACIÓN DE STOCK Y CÁLCULO DE IMPORTES EN RENGLÓN DE VENTA
+-- Reglas: RN-01, RN-06, RN-08, RN-09
+-- Tipo: BEFORE INSERT en renglon_comprobante
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_validar_renglon_venta()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_sala INTEGER;
+    v_cliente INTEGER;
+    v_stock_disponible INTEGER;
+    v_precio_actual NUMERIC(10, 2);
+    v_descuento_pct NUMERIC(5, 2);
+BEGIN
+    -- Obtener la sala y el cliente del comprobante
+    SELECT id_sala, id_cliente INTO v_sala, v_cliente
+    FROM comprobante
+    WHERE nro_comprobante = NEW.nro_comprobante;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El comprobante cabecera % no existe', NEW.nro_comprobante;
+    END IF;
+
+    -- RN-09: Validar existencia de stock suficiente en la sala
+    v_stock_disponible := fn_stock_sala(v_sala, NEW.cod_vino);
+    IF v_stock_disponible < NEW.cantidad THEN
+        RAISE EXCEPTION 'Stock insuficiente del vino % en la sala % (disponible: %, solicitado: %) (RN-09)',
+            NEW.cod_vino, v_sala, v_stock_disponible, NEW.cantidad;
+    END IF;
+
+    -- Obtener precio vigente del catálogo del vino (RN-01)
+    SELECT precio INTO v_precio_actual
+    FROM vino
+    WHERE cod_vino = NEW.cod_vino;
+
+    -- Fijar el precio histórico al momento de la venta
+    NEW.precio_unitario := v_precio_actual;
+
+    -- RN-06: Asignar descuento según tipo de cliente
+    v_descuento_pct := fn_descuento_cliente(v_cliente);
+    NEW.descuento_aplicado := v_descuento_pct;
+
+    -- RN-08: Calcular el subtotal del renglón con descuento aplicado
+    NEW.subtotal_renglon := ROUND(
+        NEW.cantidad * NEW.precio_unitario * (1.0 - (v_descuento_pct / 100.0)),
+        2
+    );
+
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_valida_stock_renglon ON renglon_comprobante;
+DROP TRIGGER
+CREATE TRIGGER trg_valida_stock_renglon
+BEFORE INSERT ON renglon_comprobante
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_validar_renglon_venta();
+CREATE TRIGGER
+-- ----------------------------------------------------------------------------
+-- 2. DESCUENTO DE STOCK Y ACTUALIZACIÓN DE TOTALES DEL COMPROBANTE
+-- Reglas: RN-08, RN-09
+-- Tipo: AFTER INSERT en renglon_comprobante
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_actualizar_stock_totales_venta()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_sala INTEGER;
+    v_totales RECORD;
+BEGIN
+    -- Obtener sala del comprobante
+    SELECT id_sala INTO v_sala
+    FROM comprobante
+    WHERE nro_comprobante = NEW.nro_comprobante;
+
+    -- RN-09: Descontar botellas vendidas del stock de la sala
+    UPDATE stock_sala
+    SET cantidad = cantidad - NEW.cantidad
+    WHERE id_sala = v_sala AND cod_vino = NEW.cod_vino;
+
+    -- RN-08: Recalcular y actualizar totales en la cabecera
+    SELECT * INTO v_totales FROM fn_total_comprobante(NEW.nro_comprobante);
+
+    UPDATE comprobante
+    SET subtotal = v_totales.subtotal,
+        descuento = v_totales.descuento,
+        total = v_totales.total
+    WHERE nro_comprobante = NEW.nro_comprobante;
+
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_descuenta_stock_actualiza_totales ON renglon_comprobante;
+DROP TRIGGER
+CREATE TRIGGER trg_descuenta_stock_actualiza_totales
+AFTER INSERT ON renglon_comprobante
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_actualizar_stock_totales_venta();
+CREATE TRIGGER
+-- ----------------------------------------------------------------------------
+-- 3. CONTROL DE TRANSICIONES DE ESTADO EN INGRESOS
+-- Regla: RN-10 (en_confeccion -> terminado -> procesado, sin retrocesos ni saltos)
+-- Tipo: BEFORE UPDATE OF estado en ingreso
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_control_estados_ingreso()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF OLD.estado = NEW.estado THEN
+        RETURN NEW;
+    END IF;
+
+    IF OLD.estado = 'en_confeccion' AND NEW.estado <> 'terminado' THEN
+        RAISE EXCEPTION 'Transición inválida en ingreso %: solo se puede pasar de "en_confeccion" a "terminado" (RN-10)',
+            OLD.cod_ingreso;
+    ELSIF OLD.estado = 'terminado' AND NEW.estado <> 'procesado' THEN
+        RAISE EXCEPTION 'Transición inválida en ingreso %: solo se puede pasar de "terminado" a "procesado" (RN-10)',
+            OLD.cod_ingreso;
+    ELSIF OLD.estado = 'procesado' THEN
+        RAISE EXCEPTION 'El ingreso % ya está procesado y su estado no puede modificarse (RN-10)',
+            OLD.cod_ingreso;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_estado_ingreso ON ingreso;
+DROP TRIGGER
+CREATE TRIGGER trg_estado_ingreso
+BEFORE UPDATE OF estado ON ingreso
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_control_estados_ingreso();
+CREATE TRIGGER
+-- ----------------------------------------------------------------------------
+-- 4. CONTROL DE TRANSICIONES DE ESTADO EN TRANSFERENCIAS
+-- Regla: RN-11 (en_confeccion -> terminado -> procesado, sin retrocesos ni saltos)
+-- Tipo: BEFORE UPDATE OF estado en transferencia
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_control_estados_transferencia()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF OLD.estado = NEW.estado THEN
+        RETURN NEW;
+    END IF;
+
+    IF OLD.estado = 'en_confeccion' AND NEW.estado <> 'terminado' THEN
+        RAISE EXCEPTION 'Transición inválida en transferencia %: solo se permite pasar de "en_confeccion" a "terminado" (RN-11)',
+            OLD.nro_solicitud;
+    ELSIF OLD.estado = 'terminado' AND NEW.estado <> 'procesado' THEN
+        RAISE EXCEPTION 'Transición inválida en transferencia %: solo se permite pasar de "terminado" a "procesado" (RN-11)',
+            OLD.nro_solicitud;
+    ELSIF OLD.estado = 'procesado' THEN
+        RAISE EXCEPTION 'La transferencia % ya está procesada y su estado no admite modificaciones (RN-11)',
+            OLD.nro_solicitud;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_estado_transferencia ON transferencia;
+DROP TRIGGER
+CREATE TRIGGER trg_estado_transferencia
+BEFORE UPDATE OF estado ON transferencia
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_control_estados_transferencia();
+CREATE TRIGGER
+-- ----------------------------------------------------------------------------
+-- 5. FECHA DE CONFECCIÓN INMUTABLE EN TRANSFERENCIAS
+-- Regla: RN-11 (La fecha de confección es la actual y no puede modificarse)
+-- Tipo: BEFORE INSERT OR UPDATE en transferencia
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_fecha_confeccion_transferencia()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.fecha_confeccion := CURRENT_DATE;
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF NEW.fecha_confeccion IS DISTINCT FROM OLD.fecha_confeccion THEN
+            RAISE EXCEPTION 'La fecha de confección de la transferencia no puede ser modificada (RN-11)';
+        END IF;
+        RETURN NEW;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_fecha_transferencia ON transferencia;
+DROP TRIGGER
+CREATE TRIGGER trg_fecha_transferencia
+BEFORE INSERT OR UPDATE ON transferencia
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_fecha_confeccion_transferencia();
+CREATE TRIGGER
+-- ----------------------------------------------------------------------------
+-- 6. BLOQUEO DE RENGLONES EN DOCUMENTOS NO EN CONFECCIÓN
+-- Regla: RN-12 (No admite agregar, modificar ni quitar renglones si no está en confección)
+-- Tipo: BEFORE INSERT OR UPDATE OR DELETE en renglon_ingreso y renglon_transferencia
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_ingreso()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_cod_ingreso INTEGER;
+    v_estado estado_documento;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        v_cod_ingreso := OLD.cod_ingreso;
+    ELSE
+        v_cod_ingreso := NEW.cod_ingreso;
+    END IF;
+
+    SELECT estado INTO v_estado
+    FROM ingreso
+    WHERE cod_ingreso = v_cod_ingreso;
+
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+        RAISE EXCEPTION 'No se pueden modificar los renglones del ingreso % porque su estado es "%" (RN-12)',
+            v_cod_ingreso, v_estado;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_bloqueo_renglon_ingreso ON renglon_ingreso;
+DROP TRIGGER
+CREATE TRIGGER trg_bloqueo_renglon_ingreso
+BEFORE INSERT OR UPDATE OR DELETE ON renglon_ingreso
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_bloqueo_renglones_ingreso();
+CREATE TRIGGER
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_transferencia()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_nro_solicitud INTEGER;
+    v_estado estado_documento;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        v_nro_solicitud := OLD.nro_solicitud;
+    ELSE
+        v_nro_solicitud := NEW.nro_solicitud;
+    END IF;
+
+    SELECT estado INTO v_estado
+    FROM transferencia
+    WHERE nro_solicitud = v_nro_solicitud;
+
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+        RAISE EXCEPTION 'No se pueden modificar los renglones de la transferencia % porque su estado es "%" (RN-12)',
+            v_nro_solicitud, v_estado;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_bloqueo_renglon_transferencia ON renglon_transferencia;
+DROP TRIGGER
+CREATE TRIGGER trg_bloqueo_renglon_transferencia
+BEFORE INSERT OR UPDATE OR DELETE ON renglon_transferencia
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_bloqueo_renglones_transferencia();
+CREATE TRIGGER
+-- ----------------------------------------------------------------------------
+-- 7. AUDITORÍA DE PRECIOS DE VINO
+-- Regla: RN-13 (Registra fecha, usuario, precio anterior y nuevo ante cambios de precio)
+-- Tipo: AFTER UPDATE OF precio en vino
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_auditoria_precio_vino()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF OLD.precio IS DISTINCT FROM NEW.precio THEN
+        INSERT INTO auditoria_precio (
+            cod_vino,
+            precio_anterior,
+            precio_nuevo,
+            fecha_hora,
+            usuario
+        ) VALUES (
+            NEW.cod_vino,
+            OLD.precio,
+            NEW.precio,
+            CURRENT_TIMESTAMP,
+            SESSION_USER
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_audita_precio_vino ON vino;
+DROP TRIGGER
+CREATE TRIGGER trg_audita_precio_vino
+AFTER UPDATE OF precio ON vino
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_auditoria_precio_vino();
+CREATE TRIGGER
+-- ----------------------------------------------------------------------------
+-- 8. SUMA DE PORCENTAJES DE CORTE (100%)
+-- Regla: RN-05 (Los porcentajes de corte suman exactamente 100)
+-- Tipo: CONSTRAINT TRIGGER DEFERRABLE INITIALLY DEFERRED en composicion
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trg_fn_validar_porcentaje_corte()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_cod_vino INTEGER;
+    v_suma NUMERIC(6, 2);
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        v_cod_vino := OLD.cod_vino;
+    ELSE
+        v_cod_vino := NEW.cod_vino;
+    END IF;
+
+    -- Validar si el vino todavía existe (evita errores en cascadas)
+    IF EXISTS (SELECT 1 FROM vino WHERE cod_vino = v_cod_vino) THEN
+        SELECT COALESCE(SUM(porcentaje), 0.00) INTO v_suma
+        FROM composicion
+        WHERE cod_vino = v_cod_vino;
+
+        IF v_suma <> 100.00 THEN
+            RAISE EXCEPTION 'La composición del vino % suma %, pero debe sumar exactamente 100 %% (RN-05)',
+                v_cod_vino, v_suma;
+        END IF;
+    END IF;
+
+    RETURN NULL;
+END;
+$$;
+CREATE FUNCTION
+DROP TRIGGER IF EXISTS trg_composicion_suma_cien ON composicion;
+DROP TRIGGER
+CREATE CONSTRAINT TRIGGER trg_composicion_suma_cien
+AFTER INSERT OR UPDATE OR DELETE ON composicion
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION trg_fn_validar_porcentaje_corte();
+CREATE TRIGGER
+-- Cierre de brechas detectadas en la revisión.
+CREATE OR REPLACE FUNCTION trg_fn_cliente_subtipo() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_tipo text; v_n integer;
+BEGIN
+  v_id := CASE WHEN TG_TABLE_NAME = 'cliente' THEN COALESCE(NEW.id_cliente, OLD.id_cliente)
+               ELSE COALESCE(NEW.id_cliente, OLD.id_cliente) END;
+  SELECT tipo_cliente INTO v_tipo FROM cliente WHERE id_cliente = v_id;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT (EXISTS(SELECT 1 FROM socio WHERE id_cliente=v_id))::int +
+         (EXISTS(SELECT 1 FROM distribuidor WHERE id_cliente=v_id))::int +
+         (EXISTS(SELECT 1 FROM exportador WHERE id_cliente=v_id))::int INTO v_n;
+  IF v_n <> 1 OR NOT (
+      (v_tipo='socio' AND EXISTS(SELECT 1 FROM socio WHERE id_cliente=v_id)) OR
+      (v_tipo='distribuidor' AND EXISTS(SELECT 1 FROM distribuidor WHERE id_cliente=v_id)) OR
+      (v_tipo='exportador' AND EXISTS(SELECT 1 FROM exportador WHERE id_cliente=v_id))) THEN
+    RAISE EXCEPTION 'Cliente %: subtipo ausente o incompatible (RN-06)', v_id;
+  END IF;
+  RETURN NULL;
+END $$;
+CREATE FUNCTION
+CREATE CONSTRAINT TRIGGER trg_cliente_subtipo AFTER INSERT OR UPDATE OR DELETE ON cliente
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+CREATE TRIGGER
+CREATE CONSTRAINT TRIGGER trg_socio_subtipo AFTER INSERT OR UPDATE OR DELETE ON socio
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+CREATE TRIGGER
+CREATE CONSTRAINT TRIGGER trg_distribuidor_subtipo AFTER INSERT OR UPDATE OR DELETE ON distribuidor
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+CREATE TRIGGER
+CREATE CONSTRAINT TRIGGER trg_exportador_subtipo AFTER INSERT OR UPDATE OR DELETE ON exportador
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_cliente_subtipo();
+CREATE TRIGGER
+CREATE OR REPLACE FUNCTION trg_fn_comprobante_inmutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND pg_trigger_depth() > 1 AND
+     ROW(NEW.nro_comprobante,NEW.id_cliente,NEW.id_sala,NEW.fecha) IS NOT DISTINCT FROM
+     ROW(OLD.nro_comprobante,OLD.id_cliente,OLD.id_sala,OLD.fecha) THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'Comprobante emitido inmutable (RN-08)';
+END $$;
+CREATE FUNCTION
+CREATE TRIGGER trg_comprobante_inmutable BEFORE UPDATE OR DELETE ON comprobante
+FOR EACH ROW EXECUTE FUNCTION trg_fn_comprobante_inmutable();
+CREATE TRIGGER
+CREATE OR REPLACE FUNCTION trg_fn_renglon_venta_inmutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'Renglón de venta emitido inmutable (RN-08/09)'; END $$;
+CREATE FUNCTION
+CREATE TRIGGER trg_renglon_venta_inmutable BEFORE UPDATE OR DELETE ON renglon_comprobante
+FOR EACH ROW EXECUTE FUNCTION trg_fn_renglon_venta_inmutable();
+CREATE TRIGGER
+-- Bloqueo de cabecera durante el alta de renglones; serializa las ventas del mismo comprobante.
+CREATE OR REPLACE FUNCTION trg_fn_validar_renglon_venta() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_sala integer; v_cliente integer; v_precio numeric(10,2); v_desc numeric(5,2);
+BEGIN
+  SELECT id_sala,id_cliente INTO v_sala,v_cliente FROM comprobante
+  WHERE nro_comprobante=NEW.nro_comprobante FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Comprobante % inexistente',NEW.nro_comprobante; END IF;
+  SELECT precio INTO v_precio FROM vino WHERE cod_vino=NEW.cod_vino;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Vino % inexistente',NEW.cod_vino; END IF;
+  v_desc := fn_descuento_cliente(v_cliente);
+  NEW.precio_unitario := v_precio;
+  NEW.descuento_aplicado := v_desc;
+  NEW.subtotal_renglon := ROUND(NEW.cantidad*v_precio*(1-v_desc/100),2);
+  -- UPDATE atómico: la segunda sesión espera y luego observa el stock vigente.
+  UPDATE stock_sala SET cantidad=cantidad-NEW.cantidad
+  WHERE id_sala=v_sala AND cod_vino=NEW.cod_vino AND cantidad>=NEW.cantidad;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Stock insuficiente en sala para vino % (RN-09)',NEW.cod_vino; END IF;
+  RETURN NEW;
+END $$;
+CREATE FUNCTION
+-- El descuento se realiza en BEFORE INSERT; AFTER INSERT solo recalcula.
+CREATE OR REPLACE FUNCTION trg_fn_actualizar_stock_totales_venta() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_totales record;
+BEGIN
+  SELECT * INTO v_totales FROM fn_total_comprobante(NEW.nro_comprobante);
+  UPDATE comprobante SET subtotal=v_totales.subtotal, descuento=v_totales.descuento,
+    total=v_totales.total WHERE nro_comprobante=NEW.nro_comprobante;
+  RETURN NEW;
+END $$;
+CREATE FUNCTION
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_ingreso() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_estado estado_documento;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.cod_ingreso END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.cod_ingreso END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    SELECT estado INTO v_estado FROM ingreso WHERE cod_ingreso=v_id FOR UPDATE;
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+      RAISE EXCEPTION 'Ingreso % cerrado: renglón inmutable (RN-12)',v_id;
+    END IF;
+  END LOOP;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE FUNCTION
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_transferencia() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_estado estado_documento;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.nro_solicitud END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.nro_solicitud END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    SELECT estado INTO v_estado FROM transferencia WHERE nro_solicitud=v_id FOR UPDATE;
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+      RAISE EXCEPTION 'Transferencia % cerrada: renglón inmutable (RN-12)',v_id;
+    END IF;
+  END LOOP;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE FUNCTION
+-- El ingreso sólo puede contener vinos elaborados por su bodega de origen.
+CREATE OR REPLACE FUNCTION trg_fn_bloqueo_renglones_ingreso() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_estado estado_documento;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.cod_ingreso END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.cod_ingreso END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    SELECT estado INTO v_estado FROM ingreso WHERE cod_ingreso=v_id FOR UPDATE;
+    IF v_estado IS DISTINCT FROM 'en_confeccion' THEN
+      RAISE EXCEPTION 'Ingreso % cerrado: renglón inmutable (RN-12)',v_id;
+    END IF;
+  END LOOP;
+  IF TG_OP<>'DELETE' AND NOT EXISTS (
+    SELECT 1 FROM ingreso i JOIN vino v ON v.cuit_bodega=i.cuit_bodega
+    WHERE i.cod_ingreso=NEW.cod_ingreso AND v.cod_vino=NEW.cod_vino) THEN
+    RAISE EXCEPTION 'El vino no pertenece a la bodega del ingreso';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE FUNCTION
+-- Procesado se reserva a procedimientos; el rol API no recibe UPDATE de cabeceras.
+CREATE OR REPLACE FUNCTION trg_fn_control_estados_ingreso() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.estado='en_confeccion' AND NEW.estado='terminado' THEN RETURN NEW; END IF;
+  IF OLD.estado='terminado' AND NEW.estado='procesado' AND pg_trigger_depth()>0
+     AND current_user='app_owner' THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'Transición inválida de ingreso (RN-10)';
+END $$;
+CREATE FUNCTION
+CREATE OR REPLACE FUNCTION trg_fn_control_estados_transferencia() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.estado='en_confeccion' AND NEW.estado='terminado' THEN RETURN NEW; END IF;
+  IF OLD.estado='terminado' AND NEW.estado='procesado' AND current_user='app_owner' THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'Transición inválida de transferencia (RN-11)';
+END $$;
+CREATE FUNCTION
+CREATE OR REPLACE FUNCTION trg_fn_estado_inicial() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.estado <> 'en_confeccion' THEN RAISE EXCEPTION 'Estado inicial debe ser en_confeccion'; END IF;
+  RETURN NEW;
+END $$;
+CREATE FUNCTION
+CREATE TRIGGER trg_ingreso_inicial BEFORE INSERT ON ingreso FOR EACH ROW EXECUTE FUNCTION trg_fn_estado_inicial();
+CREATE TRIGGER
+CREATE TRIGGER trg_transferencia_inicial BEFORE INSERT ON transferencia FOR EACH ROW EXECUTE FUNCTION trg_fn_estado_inicial();
+CREATE TRIGGER
+CREATE OR REPLACE FUNCTION trg_fn_validar_porcentaje_corte() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_id integer; v_suma numeric;
+BEGIN
+  FOR v_id IN SELECT DISTINCT id FROM (VALUES
+    (CASE WHEN TG_OP<>'INSERT' THEN OLD.cod_vino END),
+    (CASE WHEN TG_OP<>'DELETE' THEN NEW.cod_vino END)) AS ids(id)
+    WHERE id IS NOT NULL ORDER BY id LOOP
+    IF EXISTS(SELECT 1 FROM vino WHERE cod_vino=v_id) THEN
+      SELECT COALESCE(SUM(porcentaje),0) INTO v_suma FROM composicion WHERE cod_vino=v_id;
+      IF v_suma<>100 THEN RAISE EXCEPTION 'Corte del vino % suma %; debe sumar 100 %% (RN-05)',v_id,v_suma; END IF;
+    END IF;
+  END LOOP;
+  RETURN NULL;
+END $$;
+CREATE FUNCTION
+CREATE OR REPLACE FUNCTION trg_fn_validar_vino_composicion() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_suma numeric;
+BEGIN
+  IF EXISTS(SELECT 1 FROM vino WHERE cod_vino=NEW.cod_vino) THEN
+    SELECT COALESCE(SUM(porcentaje),0) INTO v_suma FROM composicion WHERE cod_vino=NEW.cod_vino;
+    IF v_suma<>100 THEN RAISE EXCEPTION 'Corte del vino % suma %; debe sumar 100 %% (RN-05)',NEW.cod_vino,v_suma; END IF;
+  END IF;
+  RETURN NULL;
+END $$;
+CREATE FUNCTION
+CREATE CONSTRAINT TRIGGER trg_vino_tiene_composicion AFTER INSERT OR UPDATE ON vino
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trg_fn_validar_vino_composicion();
+CREATE TRIGGER
+
+atuel_e4m_sin_test · 006_vistas.sql
+-- ============================================================================
+-- PROYECTO: Bodegas del Atuel
+-- ETAPA 2: Vistas Analíticas y de Operación (006_vistas.sql)
+-- ============================================================================
+-- ----------------------------------------------------------------------------
+-- 1. v_stock_total_vino
+-- Propósito: Consolida el stock en el depósito central y en las salas de venta
+--            por cada vino existente en el catálogo.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_stock_total_vino AS
+SELECT
+    v.cod_vino,
+    v.nombre AS vino,
+    v.tipo,
+    v.anada,
+    v.volumen_ml,
+    v.precio,
+    COALESCE(sd.cantidad, 0) AS stock_deposito,
+    COALESCE(ss.stock_salas, 0)::INTEGER AS stock_salas,
+    (COALESCE(sd.cantidad, 0) + COALESCE(ss.stock_salas, 0))::INTEGER AS stock_total
+FROM vino v
+LEFT JOIN stock_deposito sd ON v.cod_vino = sd.cod_vino
+LEFT JOIN (
+    SELECT cod_vino, SUM(cantidad) AS stock_salas
+    FROM stock_sala
+    GROUP BY cod_vino
+) ss ON v.cod_vino = ss.cod_vino;
+CREATE VIEW
+-- ----------------------------------------------------------------------------
+-- 2. v_documentos_pendientes
+-- Propósito: Monitorea todas las operaciones de ingresos y transferencias que
+--            todavía no fueron procesadas (estados 'en_confeccion' o 'terminado').
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_documentos_pendientes AS
+SELECT
+    'ingreso' AS tipo_documento,
+    i.cod_ingreso AS nro_documento,
+    i.fecha AS fecha_emision,
+    i.estado,
+    b.razon_social AS origen,
+    'Depósito Central' AS destino,
+    t.razon_social AS transportista,
+    COUNT(ri.cod_vino)::INTEGER AS cantidad_items,
+    COALESCE(SUM(ri.cantidad), 0)::INTEGER AS total_botellas
+FROM ingreso i
+JOIN bodega b ON i.cuit_bodega = b.cuit
+JOIN transportista t ON i.cod_transportista = t.cod_transportista
+LEFT JOIN renglon_ingreso ri ON i.cod_ingreso = ri.cod_ingreso
+WHERE i.estado <> 'procesado'
+GROUP BY i.cod_ingreso, i.fecha, i.estado, b.razon_social, t.razon_social
+UNION ALL
+SELECT
+    'transferencia' AS tipo_documento,
+    tr.nro_solicitud AS nro_documento,
+    tr.fecha_confeccion AS fecha_emision,
+    tr.estado,
+    'Depósito Central' AS origen,
+    CONCAT('Sala ', s.id_sala, ' - ', l.nombre) AS destino,
+    '-' AS transportista,
+    COUNT(rt.cod_vino)::INTEGER AS cantidad_items,
+    COALESCE(SUM(rt.cantidad), 0)::INTEGER AS total_botellas
+FROM transferencia tr
+JOIN sala_venta s ON tr.id_sala = s.id_sala
+JOIN localidad l ON s.id_localidad = l.id_localidad
+LEFT JOIN renglon_transferencia rt ON tr.nro_solicitud = rt.nro_solicitud
+WHERE tr.estado <> 'procesado'
+GROUP BY tr.nro_solicitud, tr.fecha_confeccion, tr.estado, s.id_sala, l.nombre;
+CREATE VIEW
+-- ----------------------------------------------------------------------------
+-- 3. mv_ventas_mensuales_sala (Vista Materializada)
+-- Propósito: Agrupa el volumen de comprobantes emitidos y montos facturados
+--            por sala y período mensual. Acelera consultas de reportes.
+-- ----------------------------------------------------------------------------
+CREATE MATERIALIZED VIEW mv_ventas_mensuales_sala AS
+SELECT
+    c.id_sala,
+    s.calle || ' ' || s.numero AS direccion_sala,
+    l.nombre AS localidad,
+    DATE_PART('year', c.fecha)::INTEGER AS anio,
+    DATE_PART('month', c.fecha)::INTEGER AS mes,
+    COUNT(c.nro_comprobante)::INTEGER AS cantidad_ventas,
+    COALESCE(SUM(c.subtotal), 0.00)::NUMERIC(14, 2) AS subtotal_bruto,
+    COALESCE(SUM(c.descuento), 0.00)::NUMERIC(14, 2) AS total_descuentos,
+    COALESCE(SUM(c.total), 0.00)::NUMERIC(14, 2) AS total_facturado
+FROM comprobante c
+JOIN sala_venta s ON c.id_sala = s.id_sala
+JOIN localidad l ON s.id_localidad = l.id_localidad
+GROUP BY c.id_sala, s.calle, s.numero, l.nombre, DATE_PART('year', c.fecha), DATE_PART('month', c.fecha);
+SELECT 0
+-- Índice único sobre la vista materializada para permitir REFRESH CONCURRENTLY
+CREATE UNIQUE INDEX uq_mv_ventas_mensuales_sala
+ON mv_ventas_mensuales_sala (id_sala, anio, mes);
+CREATE INDEX
+
+atuel_e4m_sin_test · 007_roles.sql
+-- Migración exclusiva de base nueva. Claves fuera del repositorio.
+DO $$ BEGIN
+  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='app_owner') THEN CREATE ROLE app_owner NOLOGIN; END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='app_rw') THEN CREATE ROLE app_rw LOGIN; END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='app_ro') THEN CREATE ROLE app_ro LOGIN; END IF;
+END $$;
+DO
+DO $$ DECLARE x record; BEGIN
+  FOR x IN SELECT c.relname,c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+           WHERE n.nspname='public' AND c.relkind IN ('r','v','m') LOOP
+    EXECUTE format('ALTER %s public.%I OWNER TO app_owner',
+      CASE x.relkind WHEN 'v' THEN 'VIEW'
+      WHEN 'm' THEN 'MATERIALIZED VIEW' ELSE 'TABLE' END,x.relname);
+  END LOOP;
+  FOR x IN SELECT p.oid,p.prokind FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+           WHERE n.nspname='public' LOOP
+    EXECUTE format('ALTER %s %s OWNER TO app_owner',
+      CASE WHEN x.prokind='p' THEN 'PROCEDURE' ELSE 'FUNCTION' END,x.oid::regprocedure);
+  END LOOP;
+  ALTER TYPE estado_documento OWNER TO app_owner;
+  ALTER DOMAIN cuit_dom OWNER TO app_owner;
+END $$;
+DO
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
+REVOKE
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC;
+REVOKE
+REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM PUBLIC;
+REVOKE
+GRANT USAGE ON SCHEMA public TO app_owner,app_rw,app_ro;
+GRANT
+GRANT CREATE ON SCHEMA public TO app_owner;
+GRANT
+GRANT USAGE ON TYPE estado_documento,cuit_dom TO app_rw,app_ro;
+GRANT
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_rw,app_ro;
+GRANT
+GRANT SELECT,INSERT,UPDATE,DELETE ON localidad,sala_venta,empleado,finca,cepa,parcela,
+  bodega,lote_uva,analisis_calidad,vino,composicion,maridaje,vino_maridaje,
+  cliente,socio,distribuidor,exportador,permiso_exportacion,transportista,
+  transportista_localidad TO app_rw;
+GRANT
+GRANT INSERT ON ingreso,transferencia,comprobante,renglon_ingreso,
+  renglon_transferencia,renglon_comprobante TO app_rw;
+GRANT
+GRANT UPDATE,DELETE ON renglon_ingreso,renglon_transferencia TO app_rw;
+GRANT
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO app_rw;
+GRANT
+GRANT EXECUTE ON FUNCTION fn_descuento_cliente(integer),fn_stock_sala(integer,integer),
+  fn_antiguedad_anios(date),fn_total_comprobante(integer) TO app_rw,app_ro;
+GRANT
+GRANT EXECUTE ON PROCEDURE sp_procesar_ingreso(integer),sp_procesar_transferencia(integer),
+  sp_terminar_ingreso(integer),sp_terminar_transferencia(integer) TO app_rw;
+GRANT
+DO $$ DECLARE x record; BEGIN
+  FOR x IN SELECT p.oid FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+           WHERE n.nspname='public' AND (p.proname LIKE 'trg_fn_%' OR p.proname LIKE 'sp_%') LOOP
+    EXECUTE format('ALTER ROUTINE %s SECURITY DEFINER',x.oid::regprocedure);
+    EXECUTE format('ALTER ROUTINE %s SET search_path = public, pg_temp',x.oid::regprocedure);
+  END LOOP;
+END $$;
+DO
+-- EXECUTE de funciones es global por defecto: revocar sin IN SCHEMA.
+ALTER DEFAULT PRIVILEGES FOR ROLE app_owner REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES
+ALTER DEFAULT PRIVILEGES FOR ROLE app_owner IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES
+ALTER DEFAULT PRIVILEGES FOR ROLE app_owner IN SCHEMA public GRANT SELECT ON TABLES TO app_ro;
+ALTER DEFAULT PRIVILEGES
+TRUNCATE TABLE
+SET
+SET
+SET
+SET
+SET
+ set_config
+------------
+
+(1 row)
+
+SET
+SET
+SET
+SET
+SET
+ALTER TABLE
+COPY 20
+ALTER TABLE
+ALTER TABLE
+COPY 12
+ALTER TABLE
+ALTER TABLE
+COPY 20
+ALTER TABLE
+ALTER TABLE
+COPY 600
+ALTER TABLE
+ALTER TABLE
+COPY 3000
+ALTER TABLE
+ALTER TABLE
+COPY 3000
+ALTER TABLE
+ALTER TABLE
+COPY 600
+ALTER TABLE
+ALTER TABLE
+COPY 1
+ALTER TABLE
+ALTER TABLE
+COPY 20
+ALTER TABLE
+ALTER TABLE
+COPY 3
+ALTER TABLE
+ALTER TABLE
+COPY 20000
+ALTER TABLE
+ALTER TABLE
+COPY 600
+ALTER TABLE
+ALTER TABLE
+COPY 25
+ALTER TABLE
+ALTER TABLE
+COPY 150000
+ALTER TABLE
+ALTER TABLE
+COPY 5000
+ALTER TABLE
+ALTER TABLE
+COPY 50
+ALTER TABLE
+ALTER TABLE
+COPY 3000
+ALTER TABLE
+ALTER TABLE
+COPY 30
+ALTER TABLE
+ALTER TABLE
+COPY 600
+ALTER TABLE
+ALTER TABLE
+COPY 8
+ALTER TABLE
+ALTER TABLE
+COPY 3000
+ALTER TABLE
+ALTER TABLE
+COPY 500000
+ALTER TABLE
+ALTER TABLE
+COPY 3000
+ALTER TABLE
+ALTER TABLE
+COPY 600
+ALTER TABLE
+ALTER TABLE
+COPY 3000
+ALTER TABLE
+ALTER TABLE
+COPY 12000
+ALTER TABLE
+ALTER TABLE
+COPY 600
+ALTER TABLE
+ALTER TABLE
+COPY 3000
+ALTER TABLE
+ALTER TABLE
+COPY 60
+ALTER TABLE
+ALTER TABLE
+COPY 600
+ALTER TABLE
+ setval
+--------
+   3000
+(1 row)
+
+ setval
+--------
+    121
+(1 row)
+
+ setval
+--------
+     13
+(1 row)
+
+ setval
+--------
+  20003
+(1 row)
+
+ setval
+--------
+ 150014
+(1 row)
+
+ setval
+--------
+     20
+(1 row)
+
+ setval
+--------
+    606
+(1 row)
+
+ setval
+--------
+     20
+(1 row)
+
+ setval
+--------
+   3000
+(1 row)
+
+ setval
+--------
+      9
+(1 row)
+
+ setval
+--------
+     26
+(1 row)
+
+ setval
+--------
+    606
+(1 row)
+
+ setval
+--------
+     30
+(1 row)
+
+ setval
+--------
+    600
+(1 row)
+
+REFRESH MATERIALIZED VIEW
+SET
+         control          | incumplimientos
+--------------------------+-----------------
+ cortes                   |               0
+ descuentos_catalogo      |               0
+ descuentos_venta         |               0
+ documentos_no_procesados |               0
+ fechas_analisis          |               0
+ fechas_movimientos       |               0
+ fk_no_validadas          |               0
+ huerfanos_movimientos    |               0
+ huerfanos_produccion     |               0
+ huerfanos_venta          |               0
+ stock_deposito           |               0
+ stock_sala               |               0
+ subtipos                 |               0
+ tabla_vacia              |               0
+ tablas_no_en_catalogo    |               0
+ totales_venta            |               0
+ volumen_clientes         |               0
+ volumen_comprobantes     |               0
+ volumen_renglones_venta  |               0
+ volumen_tres_tablas_10k  |               0
+(20 rows)
+
+VACUUM
+
+Clonado atuel_e4m_con_test desde atuel_e4m_sin_test con CREATE DATABASE TEMPLATE.
