@@ -1,16 +1,32 @@
+name: atuel-etapa6-lab
 services:
   db:
     image: postgres:16-alpine
-    container_name: bodegas_db
-    restart: always
-    env_file:
-      - .env
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: atuel_api_test
+      POSTGRES_USER: atuel_admin
+      POSTGRES_PASSWORD: ${ATUEL_LAB_ADMIN_PASSWORD:?Definir ATUEL_LAB_ADMIN_PASSWORD}
+      API_DB_PASSWORD: ${API_DB_PASSWORD:?Definir API_DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db:/db
-      - ./tests:/tests
-
+      - etapa6_data:/var/lib/postgresql/data
+      - ./db/migrations:/atuel/migrations:ro
+      - ./api/init-db.sh:/docker-entrypoint-initdb.d/10-etapa6.sh:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "atuel_admin", "-d", "atuel_api_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  api:
+    build: ./api
+    environment:
+      API_DB_HOST: db
+      API_DB_PORT: "5432"
+      API_DB_NAME: atuel_api_test
+      API_DB_PASSWORD: ${API_DB_PASSWORD:?Definir API_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${ATUEL_API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
 volumes:
-  postgres_data:
+  etapa6_data:
