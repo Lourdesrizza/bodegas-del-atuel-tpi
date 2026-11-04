@@ -1,0 +1,70 @@
+ Image atuel-etapa6-validada-api Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 557B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 273B 0.0s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim
+#3 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 97B done
+#4 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 10.69kB 0.0s done
+#5 DONE 0.1s
+
+#6 [1/5] FROM docker.io/library/python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30
+#6 resolve docker.io/library/python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30
+#6 resolve docker.io/library/python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30 0.1s done
+#6 DONE 0.1s
+
+#7 [3/5] COPY requirements.txt /app/requirements.txt
+#7 CACHED
+
+#8 [2/5] WORKDIR /app
+#8 CACHED
+
+#9 [4/5] RUN pip install --no-cache-dir -r /app/requirements.txt
+#9 CACHED
+
+#10 [5/5] COPY . /app/api
+#10 DONE 0.1s
+
+#11 exporting to image
+#11 exporting layers
+#11 exporting layers 0.3s done
+#11 exporting manifest sha256:c468f463f75475c1b074fb559fce7525e88e8e8b9760736df3ba19956338a9f3 0.1s done
+#11 exporting config sha256:2ce9b2e4f5c79bbd9f96eabf739af710cd2e1c3cdf29ae55ed902854e0b6e30c 0.1s done
+#11 exporting attestation manifest sha256:4bf3ffa81bc68eb6b9ef6a13e7539ae3c8e3c9deeecda75693cf882696bcc0e1 0.1s done
+#11 exporting manifest list sha256:4910efb9946aed082f3fe9740c07c49e84360ef3d858b2b21e75d27fbff8fa60
+#11 exporting manifest list sha256:4910efb9946aed082f3fe9740c07c49e84360ef3d858b2b21e75d27fbff8fa60 0.1s done
+#11 naming to docker.io/library/atuel-etapa6-validada-api:latest done
+#11 unpacking to docker.io/library/atuel-etapa6-validada-api:latest 0.1s done
+#11 DONE 0.7s
+
+#12 resolving provenance for metadata file
+#12 DONE 0.1s
+ Image atuel-etapa6-validada-api Built
+ Network atuel-etapa6-validada_default Creating
+ Volume atuel-etapa6-validada_etapa6_data Creating
+ Volume atuel-etapa6-validada_etapa6_data Creating
+ Network atuel-etapa6-validada_default Creating
+ Volume atuel-etapa6-validada_etapa6_data Created
+ Volume atuel-etapa6-validada_etapa6_data Created
+ Network atuel-etapa6-validada_default Created
+ Network atuel-etapa6-validada_default Created
+ Container atuel-etapa6-validada-db-1 Creating
+ Container atuel-etapa6-validada-db-1 Created
+ Container atuel-etapa6-validada-api-1 Creating
+ Container atuel-etapa6-validada-api-1 Created
+ Container atuel-etapa6-validada-db-1 Starting
+ Container atuel-etapa6-validada-db-1 Started
+ Container atuel-etapa6-validada-db-1 Waiting
+ Container atuel-etapa6-validada-db-1 Healthy
+ Container atuel-etapa6-validada-api-1 Starting
+ Container atuel-etapa6-validada-api-1 Started

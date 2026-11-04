@@ -1,0 +1,128 @@
+ Image atuel-etapa6-verificacion-api Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 565B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 273B 0.1s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim
+#3 ...
+
+#4 [auth] library/python:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim
+#3 DONE 2.1s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 97B 0.0s done
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 21.78kB 0.1s done
+#6 DONE 0.1s
+
+#7 [1/5] FROM docker.io/library/python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30
+#7 resolve docker.io/library/python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30 0.1s done
+#7 DONE 0.2s
+
+#8 [2/5] WORKDIR /app
+#8 DONE 0.1s
+
+#9 [3/5] COPY requirements.txt /app/requirements.txt
+#9 DONE 0.1s
+
+#10 [4/5] RUN pip install --no-cache-dir -r /app/requirements.txt
+#10 3.335 Collecting fastapi==0.115.12 (from -r /app/requirements.txt (line 1))
+#10 3.446   Downloading fastapi-0.115.12-py3-none-any.whl.metadata (27 kB)
+#10 3.519 Collecting uvicorn==0.34.3 (from -r /app/requirements.txt (line 2))
+#10 3.550   Downloading uvicorn-0.34.3-py3-none-any.whl.metadata (6.5 kB)
+#10 3.599 Collecting psycopg==3.2.10 (from psycopg[binary,pool]==3.2.10->-r /app/requirements.txt (line 3))
+#10 3.660   Downloading psycopg-3.2.10-py3-none-any.whl.metadata (4.6 kB)
+#10 3.733 Collecting starlette<0.47.0,>=0.40.0 (from fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 3.761   Downloading starlette-0.46.2-py3-none-any.whl.metadata (6.2 kB)
+#10 4.075 Collecting pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4 (from fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 4.104   Downloading pydantic-2.14.2-py3-none-any.whl.metadata (137 kB)
+#10 4.198 Collecting typing-extensions>=4.8.0 (from fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 4.227   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#10 4.300 Collecting click>=7.0 (from uvicorn==0.34.3->-r /app/requirements.txt (line 2))
+#10 4.329   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#10 4.364 Collecting h11>=0.8 (from uvicorn==0.34.3->-r /app/requirements.txt (line 2))
+#10 4.396   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#10 4.652 Collecting psycopg-binary==3.2.10 (from psycopg[binary,pool]==3.2.10->-r /app/requirements.txt (line 3))
+#10 4.683   Downloading psycopg_binary-3.2.10-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.0 kB)
+#10 4.724 Collecting psycopg-pool (from psycopg[binary,pool]==3.2.10->-r /app/requirements.txt (line 3))
+#10 4.755   Downloading psycopg_pool-3.3.3-py3-none-any.whl.metadata (2.8 kB)
+#10 4.805 Collecting annotated-types>=0.6.0 (from pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4->fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 4.844   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+#10 5.741 Collecting pydantic-core==2.50.2 (from pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4->fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 5.772   Downloading pydantic_core-2.50.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (6.5 kB)
+#10 5.813 Collecting typing-inspection>=0.4.4 (from pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4->fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 5.842   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+#10 5.904 Collecting anyio<5,>=3.6.2 (from starlette<0.47.0,>=0.40.0->fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 5.933   Downloading anyio-4.16.0-py3-none-any.whl.metadata (4.7 kB)
+#10 5.978 Collecting idna>=2.8 (from anyio<5,>=3.6.2->starlette<0.47.0,>=0.40.0->fastapi==0.115.12->-r /app/requirements.txt (line 1))
+#10 6.008   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+#10 6.047 Downloading fastapi-0.115.12-py3-none-any.whl (95 kB)
+#10 6.096 Downloading uvicorn-0.34.3-py3-none-any.whl (62 kB)
+#10 6.131 Downloading psycopg-3.2.10-py3-none-any.whl (206 kB)
+#10 6.190 Downloading psycopg_binary-3.2.10-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.4 MB)
+#10 6.618    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.4/4.4 MB 10.5 MB/s eta 0:00:00
+#10 6.652 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#10 6.699 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#10 6.742 Downloading pydantic-2.14.2-py3-none-any.whl (490 kB)
+#10 6.818 Downloading pydantic_core-2.50.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (2.2 MB)
+#10 7.041    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 10.5 MB/s eta 0:00:00
+#10 7.068 Downloading starlette-0.46.2-py3-none-any.whl (72 kB)
+#10 7.107 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#10 7.146 Downloading psycopg_pool-3.3.3-py3-none-any.whl (40 kB)
+#10 7.191 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#10 7.232 Downloading anyio-4.16.0-py3-none-any.whl (134 kB)
+#10 7.281 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#10 7.321 Downloading idna-3.20-py3-none-any.whl (69 kB)
+#10 7.434 Installing collected packages: typing-extensions, psycopg-binary, idna, h11, click, annotated-types, uvicorn, typing-inspection, pydantic-core, psycopg-pool, psycopg, anyio, starlette, pydantic, fastapi
+#10 14.06 Successfully installed annotated-types-0.8.0 anyio-4.16.0 click-8.5.0 fastapi-0.115.12 h11-0.16.0 idna-3.20 psycopg-3.2.10 psycopg-binary-3.2.10 psycopg-pool-3.3.3 pydantic-2.14.2 pydantic-core-2.50.2 starlette-0.46.2 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.34.3
+#10 14.06 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#10 14.27
+#10 14.27 [notice] A new release of pip is available: 25.0.1 -> 26.3
+#10 14.27 [notice] To update, run: pip install --upgrade pip
+#10 DONE 17.4s
+
+#11 [5/5] COPY . /app/api
+#11 DONE 0.3s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 5.6s done
+#12 exporting manifest sha256:58db86c4e0076d5ebc415b0cdd90eb850069496ef85a64f4230f0c4861909bcd 0.1s done
+#12 exporting config sha256:c97e38006064149c1430e526577b0315e47fd2bff8006e7da6e01bea7b6a7779 0.1s done
+#12 exporting attestation manifest sha256:043699370d36af51e10e4f2c17bc16943cbb57ad6843c0c6c5513462c62a23c3 0.1s done
+#12 exporting manifest list sha256:9b7f91e46630eeea9029ecca8c691a7979c4b67fbacc3b5f4465a1ef3e66c3f3
+#12 exporting manifest list sha256:9b7f91e46630eeea9029ecca8c691a7979c4b67fbacc3b5f4465a1ef3e66c3f3 0.1s done
+#12 naming to docker.io/library/atuel-etapa6-verificacion-api:latest 0.0s done
+#12 unpacking to docker.io/library/atuel-etapa6-verificacion-api:latest
+#12 unpacking to docker.io/library/atuel-etapa6-verificacion-api:latest 1.0s done
+#12 DONE 7.0s
+
+#13 resolving provenance for metadata file
+#13 DONE 0.1s
+ Image atuel-etapa6-verificacion-api Built
+ Network atuel-etapa6-verificacion_default Creating
+ Volume atuel-etapa6-verificacion_etapa6_data Creating
+ Network atuel-etapa6-verificacion_default Creating
+ Volume atuel-etapa6-verificacion_etapa6_data Creating
+ Volume atuel-etapa6-verificacion_etapa6_data Created
+ Volume atuel-etapa6-verificacion_etapa6_data Created
+ Network atuel-etapa6-verificacion_default Created
+ Network atuel-etapa6-verificacion_default Created
+ Container atuel-etapa6-verificacion-db-1 Creating
+ Container atuel-etapa6-verificacion-db-1 Created
+ Container atuel-etapa6-verificacion-api-1 Creating
+ Container atuel-etapa6-verificacion-api-1 Created
+ Container atuel-etapa6-verificacion-db-1 Starting
+ Container atuel-etapa6-verificacion-db-1 Started
+ Container atuel-etapa6-verificacion-db-1 Waiting
+ Container atuel-etapa6-verificacion-db-1 Error dependency db failed to start
+dependency failed to start: container atuel-etapa6-verificacion-db-1 exited (3)

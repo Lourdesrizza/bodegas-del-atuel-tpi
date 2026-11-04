@@ -1,0 +1,16 @@
+test_cliente_subtipo_atomico (test_integracion.Integracion.test_cliente_subtipo_atomico) ... ok
+test_constraint_diferido_y_auditoria (test_integracion.Integracion.test_constraint_diferido_y_auditoria) ... ok
+test_filtros_y_paginacion (test_integracion.Integracion.test_filtros_y_paginacion) ... ok
+test_inyeccion (test_integracion.Integracion.test_inyeccion) ... ok
+Inyección: GET /vinos?nombre=%27+OR+1%3D1%3B+DROP+TABLE+vino%3B+-- -> (200, []); filas vino antes=3, después=3
+test_precio_negativo_422 (test_integracion.Integracion.test_precio_negativo_422) ... ok
+test_reportes_y_rol_minimo (test_integracion.Integracion.test_reportes_y_rol_minimo) ... ok
+test_salud_y_openapi (test_integracion.Integracion.test_salud_y_openapi) ... ok
+test_transicion_invalida_y_flujos (test_integracion.Integracion.test_transicion_invalida_y_flujos) ... ok
+test_venta_exitosa (test_integracion.Integracion.test_venta_exitosa) ... ok
+test_venta_reversion_despues_de_primer_renglon (test_integracion.Integracion.test_venta_reversion_despues_de_primer_renglon) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.712s
+
+OK
