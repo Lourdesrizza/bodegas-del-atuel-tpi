@@ -1,0 +1,286 @@
+Base exclusiva: atuel_etapa5_regresion_test
+
+Inicio: 2026-11-03T19:39:40.399182-03:00
+Comando: docker exec atuel_pg16_carga_test createdb -w -U atuel_admin --maintenance-db=atuel_base_test atuel_etapa5_regresion_test
+Fin: 2026-11-03T19:39:41.535008-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:41.535008-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f - < db\migrations\001_esquema.sql
+CREATE TYPE
+CREATE DOMAIN
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+INSERT 0 3
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+Fin: 2026-11-03T19:39:42.895472-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:42.895472-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f - < db\migrations\002_constraints.sql
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+Fin: 2026-11-03T19:39:43.800662-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:43.800662-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f - < db\migrations\003_funciones.sql
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+Fin: 2026-11-03T19:39:44.175108-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:44.175108-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f - < db\migrations\004_procedimientos.sql
+CREATE PROCEDURE
+CREATE PROCEDURE
+CREATE PROCEDURE
+CREATE PROCEDURE
+Fin: 2026-11-03T19:39:44.554085-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:44.554085-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f - < db\migrations\005_triggers.sql
+CREATE FUNCTION
+psql:<stdin>:60: NOTICE:  trigger "trg_valida_stock_renglon" for relation "renglon_comprobante" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+psql:<stdin>:103: NOTICE:  trigger "trg_descuenta_stock_actualiza_totales" for relation "renglon_comprobante" does not exist, skipping
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+psql:<stdin>:139: NOTICE:  trigger "trg_estado_ingreso" for relation "ingreso" does not exist, skipping
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+psql:<stdin>:175: NOTICE:  trigger "trg_estado_transferencia" for relation "transferencia" does not exist, skipping
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+psql:<stdin>:205: NOTICE:  trigger "trg_fecha_transferencia" for relation "transferencia" does not exist, skipping
+CREATE TRIGGER
+CREATE FUNCTION
+psql:<stdin>:247: NOTICE:  trigger "trg_bloqueo_renglon_ingreso" for relation "renglon_ingreso" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+psql:<stdin>:284: NOTICE:  trigger "trg_bloqueo_renglon_transferencia" for relation "renglon_transferencia" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+psql:<stdin>:320: NOTICE:  trigger "trg_audita_precio_vino" for relation "vino" does not exist, skipping
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+psql:<stdin>:362: NOTICE:  trigger "trg_composicion_suma_cien" for relation "composicion" does not exist, skipping
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TRIGGER
+Fin: 2026-11-03T19:39:45.242783-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:45.242783-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f - < db\migrations\006_vistas.sql
+CREATE VIEW
+CREATE VIEW
+SELECT 0
+CREATE INDEX
+Fin: 2026-11-03T19:39:45.768857-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:45.768857-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f - < db\migrations\007_roles.sql
+DO
+DO
+REVOKE
+REVOKE
+REVOKE
+REVOKE
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+DO
+ALTER DEFAULT PRIVILEGES
+ALTER DEFAULT PRIVILEGES
+ALTER DEFAULT PRIVILEGES
+Fin: 2026-11-03T19:39:46.355935-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:46.355935-03:00
+Comando: docker exec atuel_pg16_carga_test mkdir /tmp/atuel_etapa5_regresion_test
+Fin: 2026-11-03T19:39:46.742998-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:46.742998-03:00
+Comando: docker cp tests/db_tests.sql atuel_pg16_carga_test:/tmp/atuel_etapa5_regresion_test/db_tests.sql
+Fin: 2026-11-03T19:39:47.216104-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:47.216104-03:00
+Comando: docker cp tests/etapas_1_2_regresion.sql atuel_pg16_carga_test:/tmp/atuel_etapa5_regresion_test/etapas_1_2_regresion.sql
+Fin: 2026-11-03T19:39:47.476224-03:00 | Código: 0
+
+Inicio: 2026-11-03T19:39:47.476224-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_etapa5_regresion_test -v ON_ERROR_STOP=1 -P pager=off -f /tmp/atuel_etapa5_regresion_test/db_tests.sql
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+SET CONSTRAINTS
+SET CONSTRAINTS
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DO
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+DO
+DO
+DO
+DO
+INSERT 0 1
+INSERT 0 1
+CALL
+CALL
+psql:/tmp/atuel_etapa5_regresion_test/etapas_1_2_regresion.sql:104: NOTICE:  Ingreso 1 procesado exitosamente.
+DO
+INSERT 0 1
+INSERT 0 1
+CALL
+CALL
+psql:/tmp/atuel_etapa5_regresion_test/etapas_1_2_regresion.sql:111: NOTICE:  Transferencia 1 procesada exitosamente para la sala 1.
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+INSERT 0 1
+INSERT 0 1
+CALL
+DO
+DO
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DO
+UPDATE 1
+DO
+DO
+UPDATE 1
+DELETE 1
+INSERT 0 1
+SET CONSTRAINTS
+DO
+SET
+CREATE FUNCTION
+RESET
+DO
+SET
+DO
+RESET
+SET
+DO
+RESET
+ROLLBACK
+Fin: 2026-11-03T19:39:48.149136-03:00 | Código: 0

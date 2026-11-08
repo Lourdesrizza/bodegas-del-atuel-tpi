@@ -1,0 +1,11 @@
+Servidor PostgreSQL 18.1; base exclusiva atuel_front_20261107_test.
+Migraciones 001-008 con ON_ERROR_STOP: todas correctas.
+Navegador: catalogo y segunda pagina, detalle, alta y edicion, venta, transferencia y tablero contra la API real.
+Vino nuevo Encuentro Rosado y cambio en vino 14 comprobados en SQL.
+Corte del vino 14 al 80 % rechazado por RN-05; edicion al 100 % aceptada.
+Venta valida: comprobante 7, subtotal 20000.00, descuento 2000.00, total 18000.00.
+Venta de dos renglones: primer vino con stock, segundo sin stock. Respuesta 409: Stock insuficiente en sala para vino 2 (RN-09).
+Antes y despues del rechazo (cabeceras, renglones, stock sala 1 vino 1): (6, 6, 19) = (6, 6, 19).
+Transferencia 2 procesada; controles de estado comprobados en el navegador.
+Tablero: ranking, barras y faltantes en sala 1 comprobados en el navegador.
+Docker Compose: configuracion comprobada; ejecucion pendiente de motor Docker.

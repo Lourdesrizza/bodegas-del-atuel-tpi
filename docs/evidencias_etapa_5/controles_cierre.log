@@ -1,0 +1,109 @@
+Base: atuel_base_test
+
+Inicio: 2026-11-03T19:39:32.854893-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < docs\evidencias_etapa_5\controles_cierre.sql
+SELECT CURRENT_DATE AS fecha_de_ejecucion;
+ fecha_de_ejecucion 
+--------------------
+ 2026-11-03
+(1 row)
+
+SELECT 'comprobante' tabla,min(fecha),max(fecha) FROM comprobante
+UNION ALL SELECT 'transferencia',min(fecha_confeccion),max(fecha_confeccion) FROM transferencia
+UNION ALL SELECT 'ingreso',min(fecha),max(fecha) FROM ingreso;
+     tabla     |    min     |    max     
+---------------+------------+------------
+ comprobante   | 2025-04-01 | 2026-10-28
+ transferencia | 2025-03-01 | 2025-03-01
+ ingreso       | 2025-01-15 | 2025-01-15
+(3 rows)
+
+SELECT 'S3' consigna,count(*) filas FROM (SELECT t.tipo_cliente,count(DISTINCT c.id_cliente) clientes FROM tipo_cliente t LEFT JOIN cliente cl USING(tipo_cliente) LEFT JOIN comprobante c ON c.id_cliente=cl.id_cliente AND c.id_sala=1 AND c.fecha BETWEEN CURRENT_DATE-6 AND CURRENT_DATE GROUP BY t.tipo_cliente) resultado;
+ consigna | filas 
+----------+-------
+ S3       |     3
+(1 row)
+
+SELECT 'S4' consigna,count(*) filas FROM (SELECT t.id_sala,sum(r.cantidad) botellas FROM transferencia t JOIN renglon_transferencia r USING(nro_solicitud) WHERE r.cod_vino=1 AND t.fecha_confeccion BETWEEN CURRENT_DATE-14 AND CURRENT_DATE GROUP BY t.id_sala ORDER BY botellas DESC,t.id_sala LIMIT 5) resultado;
+ consigna | filas 
+----------+-------
+ S4       |     0
+(1 row)
+
+SELECT 'S7' consigna,count(*) filas FROM (SELECT t.cod_transportista,t.razon_social,count(*) ingresos FROM transportista t JOIN ingreso i USING(cod_transportista) WHERE i.fecha BETWEEN CURRENT_DATE-interval '1 month' AND CURRENT_DATE GROUP BY t.cod_transportista ORDER BY ingresos DESC FETCH FIRST 1 ROW WITH TIES) resultado;
+ consigna | filas 
+----------+-------
+ S7       |     0
+(1 row)
+
+SELECT 'S8' consigna,count(*) filas FROM (SELECT s.id_sala,coalesce(sum(c.total),0) total FROM sala_venta s LEFT JOIN comprobante c ON c.id_sala=s.id_sala AND c.fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE GROUP BY s.id_sala ORDER BY total DESC,s.id_sala) resultado;
+ consigna | filas 
+----------+-------
+ S8       |    25
+(1 row)
+
+SELECT count(*) ventas_sala_1 FROM comprobante WHERE id_sala=1 AND fecha BETWEEN CURRENT_DATE-6 AND CURRENT_DATE;
+ ventas_sala_1 
+---------------
+             8
+(1 row)
+
+SELECT count(*) ventas_trimestre FROM comprobante WHERE fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE;
+ ventas_trimestre 
+------------------
+            22851
+(1 row)
+
+SELECT count(*) ingresos_trimestre_I1 FROM ingreso WHERE fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE;
+ ingresos_trimestre_i1 
+-----------------------
+                     0
+(1 row)
+
+SELECT 'I1' consigna,count(*) filas_insertadas FROM (
+  SELECT t.cod_transportista FROM transportista t LEFT JOIN ingreso i
+    ON i.cod_transportista=t.cod_transportista AND i.fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE
+  GROUP BY t.cod_transportista ORDER BY count(i.cod_ingreso),t.cod_transportista LIMIT 1
+) t CROSS JOIN localidad l WHERE l.nombre='General Alvear' AND l.provincia='Mendoza'
+AND NOT EXISTS (SELECT FROM transportista_localidad x WHERE x.cod_transportista=t.cod_transportista AND x.id_localidad=l.id_localidad);
+ consigna | filas_insertadas 
+----------+------------------
+ I1       |                0
+(1 row)
+
+SELECT conname,pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='tipo_cliente'::regclass AND contype='c';
+      conname       |                                                                                                                  pg_get_constraintdef                                                                                                                  
+--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ tipo_cliente_check | CHECK (((((tipo_cliente)::text = 'socio'::text) AND (descuento = (10)::numeric)) OR (((tipo_cliente)::text = 'distribuidor'::text) AND (descuento = (20)::numeric)) OR (((tipo_cliente)::text = 'exportador'::text) AND (descuento = (30)::numeric))))
+(1 row)
+
+SELECT (SELECT count(*) FROM comprobante) comprobantes,(SELECT count(*) FROM renglon_comprobante) renglones;
+ comprobantes | renglones 
+--------------+-----------
+       150000 |    500000
+(1 row)
+
+SELECT tgname,tgenabled FROM pg_trigger WHERE NOT tgisinternal ORDER BY tgname;
+                tgname                 | tgenabled 
+---------------------------------------+-----------
+ trg_audita_precio_vino                | O
+ trg_bloqueo_renglon_ingreso           | O
+ trg_bloqueo_renglon_transferencia     | O
+ trg_cliente_subtipo                   | O
+ trg_composicion_suma_cien             | O
+ trg_comprobante_inmutable             | O
+ trg_descuenta_stock_actualiza_totales | O
+ trg_distribuidor_subtipo              | O
+ trg_estado_ingreso                    | O
+ trg_estado_transferencia              | O
+ trg_exportador_subtipo                | O
+ trg_fecha_transferencia               | O
+ trg_ingreso_inicial                   | O
+ trg_renglon_venta_inmutable           | O
+ trg_socio_subtipo                     | O
+ trg_transferencia_inicial             | O
+ trg_valida_stock_renglon              | O
+ trg_vino_tiene_composicion            | O
+(18 rows)
+
+Fin: 2026-11-03T19:39:34.591240-03:00 | Código: 0

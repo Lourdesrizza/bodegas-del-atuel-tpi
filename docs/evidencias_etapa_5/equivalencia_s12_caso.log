@@ -1,0 +1,190 @@
+Inicio: 2026-11-03T19:48:56.387689-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < docs\evidencias_etapa_5\equivalencia_s12_no_vacia.sql
+CREATE TEMP TABLE indices_antes AS
+SELECT * FROM pg_indexes WHERE schemaname='public';
+SELECT 36
+SELECT * FROM indices_antes ORDER BY tablename,indexname;
+ schemaname |        tablename         |          indexname           | tablespace |                                                             indexdef                                                             
+------------+--------------------------+------------------------------+------------+----------------------------------------------------------------------------------------------------------------------------------
+ public     | analisis_calidad         | analisis_calidad_pkey        |            | CREATE UNIQUE INDEX analisis_calidad_pkey ON public.analisis_calidad USING btree (id_analisis)
+ public     | auditoria_precio         | auditoria_precio_pkey        |            | CREATE UNIQUE INDEX auditoria_precio_pkey ON public.auditoria_precio USING btree (id_auditoria)
+ public     | bodega                   | bodega_pkey                  |            | CREATE UNIQUE INDEX bodega_pkey ON public.bodega USING btree (cuit)
+ public     | bodega                   | uq_bodega_razon_social       |            | CREATE UNIQUE INDEX uq_bodega_razon_social ON public.bodega USING btree (razon_social)
+ public     | cepa                     | cepa_pkey                    |            | CREATE UNIQUE INDEX cepa_pkey ON public.cepa USING btree (id_cepa)
+ public     | cliente                  | cliente_pkey                 |            | CREATE UNIQUE INDEX cliente_pkey ON public.cliente USING btree (id_cliente)
+ public     | cliente                  | uq_cliente_documento         |            | CREATE UNIQUE INDEX uq_cliente_documento ON public.cliente USING btree (tipo_doc, numero_doc)
+ public     | composicion              | composicion_pkey             |            | CREATE UNIQUE INDEX composicion_pkey ON public.composicion USING btree (cod_vino, id_cepa)
+ public     | comprobante              | comprobante_pkey             |            | CREATE UNIQUE INDEX comprobante_pkey ON public.comprobante USING btree (nro_comprobante)
+ public     | distribuidor             | distribuidor_pkey            |            | CREATE UNIQUE INDEX distribuidor_pkey ON public.distribuidor USING btree (id_cliente)
+ public     | empleado                 | empleado_pkey                |            | CREATE UNIQUE INDEX empleado_pkey ON public.empleado USING btree (cuit)
+ public     | exportador               | exportador_pkey              |            | CREATE UNIQUE INDEX exportador_pkey ON public.exportador USING btree (id_cliente)
+ public     | finca                    | finca_pkey                   |            | CREATE UNIQUE INDEX finca_pkey ON public.finca USING btree (id_finca)
+ public     | ingreso                  | ingreso_pkey                 |            | CREATE UNIQUE INDEX ingreso_pkey ON public.ingreso USING btree (cod_ingreso)
+ public     | localidad                | localidad_pkey               |            | CREATE UNIQUE INDEX localidad_pkey ON public.localidad USING btree (id_localidad)
+ public     | lote_uva                 | lote_uva_pkey                |            | CREATE UNIQUE INDEX lote_uva_pkey ON public.lote_uva USING btree (nro_lote)
+ public     | lote_uva                 | uq_lote_parcela_campania     |            | CREATE UNIQUE INDEX uq_lote_parcela_campania ON public.lote_uva USING btree (id_finca, nro_parcela, campania)
+ public     | maridaje                 | maridaje_pkey                |            | CREATE UNIQUE INDEX maridaje_pkey ON public.maridaje USING btree (id_maridaje)
+ public     | mv_ventas_mensuales_sala | uq_mv_ventas_mensuales_sala  |            | CREATE UNIQUE INDEX uq_mv_ventas_mensuales_sala ON public.mv_ventas_mensuales_sala USING btree (id_sala, anio, mes)
+ public     | parcela                  | parcela_pkey                 |            | CREATE UNIQUE INDEX parcela_pkey ON public.parcela USING btree (id_finca, nro_parcela)
+ public     | permiso_exportacion      | permiso_exportacion_pkey     |            | CREATE UNIQUE INDEX permiso_exportacion_pkey ON public.permiso_exportacion USING btree (cod_permiso)
+ public     | renglon_comprobante      | renglon_comprobante_pkey     |            | CREATE UNIQUE INDEX renglon_comprobante_pkey ON public.renglon_comprobante USING btree (nro_comprobante, cod_vino)
+ public     | renglon_ingreso          | renglon_ingreso_pkey         |            | CREATE UNIQUE INDEX renglon_ingreso_pkey ON public.renglon_ingreso USING btree (cod_ingreso, cod_vino)
+ public     | renglon_transferencia    | renglon_transferencia_pkey   |            | CREATE UNIQUE INDEX renglon_transferencia_pkey ON public.renglon_transferencia USING btree (nro_solicitud, cod_vino)
+ public     | sala_venta               | sala_venta_pkey              |            | CREATE UNIQUE INDEX sala_venta_pkey ON public.sala_venta USING btree (id_sala)
+ public     | socio                    | socio_pkey                   |            | CREATE UNIQUE INDEX socio_pkey ON public.socio USING btree (id_cliente)
+ public     | stock_deposito           | stock_deposito_pkey          |            | CREATE UNIQUE INDEX stock_deposito_pkey ON public.stock_deposito USING btree (cod_vino)
+ public     | stock_sala               | stock_sala_pkey              |            | CREATE UNIQUE INDEX stock_sala_pkey ON public.stock_sala USING btree (id_sala, cod_vino)
+ public     | tipo_cliente             | tipo_cliente_pkey            |            | CREATE UNIQUE INDEX tipo_cliente_pkey ON public.tipo_cliente USING btree (tipo_cliente)
+ public     | transferencia            | transferencia_pkey           |            | CREATE UNIQUE INDEX transferencia_pkey ON public.transferencia USING btree (nro_solicitud)
+ public     | transportista            | transportista_pkey           |            | CREATE UNIQUE INDEX transportista_pkey ON public.transportista USING btree (cod_transportista)
+ public     | transportista            | uq_transportista_cuit        |            | CREATE UNIQUE INDEX uq_transportista_cuit ON public.transportista USING btree (cuit)
+ public     | transportista_localidad  | transportista_localidad_pkey |            | CREATE UNIQUE INDEX transportista_localidad_pkey ON public.transportista_localidad USING btree (cod_transportista, id_localidad)
+ public     | vino                     | uq_vino_nombre_anada_volumen |            | CREATE UNIQUE INDEX uq_vino_nombre_anada_volumen ON public.vino USING btree (nombre, anada, volumen_ml)
+ public     | vino                     | vino_pkey                    |            | CREATE UNIQUE INDEX vino_pkey ON public.vino USING btree (cod_vino)
+ public     | vino_maridaje            | vino_maridaje_pkey           |            | CREATE UNIQUE INDEX vino_maridaje_pkey ON public.vino_maridaje USING btree (cod_vino, id_maridaje)
+(36 rows)
+
+
+BEGIN;
+BEGIN
+-- Venta de laboratorio para el cliente 1 y todos los vinos de la bodega objetivo.
+CREATE TEMP TABLE vinos_caso AS
+SELECT cod_vino FROM vino
+WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1);
+SELECT 30
+INSERT INTO stock_sala(id_sala,cod_vino,cantidad)
+SELECT 1,cod_vino,1 FROM vinos_caso
+ON CONFLICT (id_sala,cod_vino) DO UPDATE SET cantidad=greatest(stock_sala.cantidad,1);
+INSERT 0 30
+CREATE TEMP TABLE venta_caso AS
+WITH alta AS (
+  INSERT INTO comprobante(id_cliente,id_sala,fecha)
+  VALUES (1,1,CURRENT_DATE) RETURNING nro_comprobante
+)
+SELECT * FROM alta;
+SELECT 1
+INSERT INTO renglon_comprobante(nro_comprobante,cod_vino,cantidad)
+SELECT nro_comprobante,cod_vino,1 FROM venta_caso CROSS JOIN vinos_caso;
+INSERT 0 30
+
+-- Caso acotado con los mismos nombres que usan ambas consultas.
+-- El cliente 1 tiene la compra completa y el 2 sirve de control negativo.
+CREATE TEMP TABLE cliente AS SELECT * FROM public.cliente WHERE id_cliente IN (1,2);
+SELECT 2
+CREATE TEMP TABLE comprobante AS
+SELECT c.* FROM public.comprobante c JOIN venta_caso USING(nro_comprobante);
+SELECT 1
+CREATE TEMP TABLE renglon_comprobante AS
+SELECT r.* FROM public.renglon_comprobante r JOIN venta_caso USING(nro_comprobante);
+SELECT 30
+CREATE TEMP TABLE s12_original AS
+WITH objetivo AS (SELECT cod_vino FROM vino WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)) SELECT cl.id_cliente FROM cliente cl WHERE EXISTS (SELECT FROM objetivo) AND NOT EXISTS (SELECT FROM objetivo v WHERE NOT EXISTS (SELECT FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante) WHERE c.id_cliente=cl.id_cliente AND r.cod_vino=v.cod_vino)) ORDER BY cl.id_cliente;
+SELECT 1
+CREATE TEMP TABLE s12_reformulada AS
+WITH objetivo AS (
+  SELECT cod_vino FROM vino
+  WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)
+), compras AS (
+  SELECT c.id_cliente,array_agg(DISTINCT r.cod_vino) vinos
+  FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante)
+  JOIN objetivo v USING(cod_vino)
+  GROUP BY c.id_cliente
+)
+SELECT c.id_cliente FROM compras c
+WHERE NOT EXISTS (
+  SELECT FROM objetivo v WHERE NOT EXISTS (
+    SELECT FROM unnest(c.vinos) compra(cod_vino) WHERE compra.cod_vino=v.cod_vino
+  )
+)
+ORDER BY c.id_cliente;
+SELECT 1
+SELECT (SELECT count(*) FROM s12_original) original,
+       (SELECT count(*) FROM s12_reformulada) reformulada,
+       (SELECT count(*) FROM (TABLE s12_original EXCEPT TABLE s12_reformulada) a) solo_original,
+       (SELECT count(*) FROM (TABLE s12_reformulada EXCEPT TABLE s12_original) b) solo_reformulada;
+ original | reformulada | solo_original | solo_reformulada 
+----------+-------------+---------------+------------------
+        1 |           1 |             0 |                0
+(1 row)
+
+TABLE s12_original;
+ id_cliente 
+------------
+          1
+(1 row)
+
+TABLE s12_reformulada;
+ id_cliente 
+------------
+          1
+(1 row)
+
+DO $$ BEGIN
+  IF (SELECT count(*) FROM s12_original) <> 1
+     OR NOT EXISTS (SELECT FROM s12_original WHERE id_cliente=1)
+     OR EXISTS (TABLE s12_original EXCEPT TABLE s12_reformulada)
+     OR EXISTS (TABLE s12_reformulada EXCEPT TABLE s12_original) THEN
+    RAISE EXCEPTION 'La comparación S12 no produjo el caso esperado';
+  END IF;
+END $$;
+DO
+ROLLBACK;
+ROLLBACK
+
+SELECT * FROM pg_indexes WHERE schemaname='public' ORDER BY tablename,indexname;
+ schemaname |        tablename         |          indexname           | tablespace |                                                             indexdef                                                             
+------------+--------------------------+------------------------------+------------+----------------------------------------------------------------------------------------------------------------------------------
+ public     | analisis_calidad         | analisis_calidad_pkey        |            | CREATE UNIQUE INDEX analisis_calidad_pkey ON public.analisis_calidad USING btree (id_analisis)
+ public     | auditoria_precio         | auditoria_precio_pkey        |            | CREATE UNIQUE INDEX auditoria_precio_pkey ON public.auditoria_precio USING btree (id_auditoria)
+ public     | bodega                   | bodega_pkey                  |            | CREATE UNIQUE INDEX bodega_pkey ON public.bodega USING btree (cuit)
+ public     | bodega                   | uq_bodega_razon_social       |            | CREATE UNIQUE INDEX uq_bodega_razon_social ON public.bodega USING btree (razon_social)
+ public     | cepa                     | cepa_pkey                    |            | CREATE UNIQUE INDEX cepa_pkey ON public.cepa USING btree (id_cepa)
+ public     | cliente                  | cliente_pkey                 |            | CREATE UNIQUE INDEX cliente_pkey ON public.cliente USING btree (id_cliente)
+ public     | cliente                  | uq_cliente_documento         |            | CREATE UNIQUE INDEX uq_cliente_documento ON public.cliente USING btree (tipo_doc, numero_doc)
+ public     | composicion              | composicion_pkey             |            | CREATE UNIQUE INDEX composicion_pkey ON public.composicion USING btree (cod_vino, id_cepa)
+ public     | comprobante              | comprobante_pkey             |            | CREATE UNIQUE INDEX comprobante_pkey ON public.comprobante USING btree (nro_comprobante)
+ public     | distribuidor             | distribuidor_pkey            |            | CREATE UNIQUE INDEX distribuidor_pkey ON public.distribuidor USING btree (id_cliente)
+ public     | empleado                 | empleado_pkey                |            | CREATE UNIQUE INDEX empleado_pkey ON public.empleado USING btree (cuit)
+ public     | exportador               | exportador_pkey              |            | CREATE UNIQUE INDEX exportador_pkey ON public.exportador USING btree (id_cliente)
+ public     | finca                    | finca_pkey                   |            | CREATE UNIQUE INDEX finca_pkey ON public.finca USING btree (id_finca)
+ public     | ingreso                  | ingreso_pkey                 |            | CREATE UNIQUE INDEX ingreso_pkey ON public.ingreso USING btree (cod_ingreso)
+ public     | localidad                | localidad_pkey               |            | CREATE UNIQUE INDEX localidad_pkey ON public.localidad USING btree (id_localidad)
+ public     | lote_uva                 | lote_uva_pkey                |            | CREATE UNIQUE INDEX lote_uva_pkey ON public.lote_uva USING btree (nro_lote)
+ public     | lote_uva                 | uq_lote_parcela_campania     |            | CREATE UNIQUE INDEX uq_lote_parcela_campania ON public.lote_uva USING btree (id_finca, nro_parcela, campania)
+ public     | maridaje                 | maridaje_pkey                |            | CREATE UNIQUE INDEX maridaje_pkey ON public.maridaje USING btree (id_maridaje)
+ public     | mv_ventas_mensuales_sala | uq_mv_ventas_mensuales_sala  |            | CREATE UNIQUE INDEX uq_mv_ventas_mensuales_sala ON public.mv_ventas_mensuales_sala USING btree (id_sala, anio, mes)
+ public     | parcela                  | parcela_pkey                 |            | CREATE UNIQUE INDEX parcela_pkey ON public.parcela USING btree (id_finca, nro_parcela)
+ public     | permiso_exportacion      | permiso_exportacion_pkey     |            | CREATE UNIQUE INDEX permiso_exportacion_pkey ON public.permiso_exportacion USING btree (cod_permiso)
+ public     | renglon_comprobante      | renglon_comprobante_pkey     |            | CREATE UNIQUE INDEX renglon_comprobante_pkey ON public.renglon_comprobante USING btree (nro_comprobante, cod_vino)
+ public     | renglon_ingreso          | renglon_ingreso_pkey         |            | CREATE UNIQUE INDEX renglon_ingreso_pkey ON public.renglon_ingreso USING btree (cod_ingreso, cod_vino)
+ public     | renglon_transferencia    | renglon_transferencia_pkey   |            | CREATE UNIQUE INDEX renglon_transferencia_pkey ON public.renglon_transferencia USING btree (nro_solicitud, cod_vino)
+ public     | sala_venta               | sala_venta_pkey              |            | CREATE UNIQUE INDEX sala_venta_pkey ON public.sala_venta USING btree (id_sala)
+ public     | socio                    | socio_pkey                   |            | CREATE UNIQUE INDEX socio_pkey ON public.socio USING btree (id_cliente)
+ public     | stock_deposito           | stock_deposito_pkey          |            | CREATE UNIQUE INDEX stock_deposito_pkey ON public.stock_deposito USING btree (cod_vino)
+ public     | stock_sala               | stock_sala_pkey              |            | CREATE UNIQUE INDEX stock_sala_pkey ON public.stock_sala USING btree (id_sala, cod_vino)
+ public     | tipo_cliente             | tipo_cliente_pkey            |            | CREATE UNIQUE INDEX tipo_cliente_pkey ON public.tipo_cliente USING btree (tipo_cliente)
+ public     | transferencia            | transferencia_pkey           |            | CREATE UNIQUE INDEX transferencia_pkey ON public.transferencia USING btree (nro_solicitud)
+ public     | transportista            | transportista_pkey           |            | CREATE UNIQUE INDEX transportista_pkey ON public.transportista USING btree (cod_transportista)
+ public     | transportista            | uq_transportista_cuit        |            | CREATE UNIQUE INDEX uq_transportista_cuit ON public.transportista USING btree (cuit)
+ public     | transportista_localidad  | transportista_localidad_pkey |            | CREATE UNIQUE INDEX transportista_localidad_pkey ON public.transportista_localidad USING btree (cod_transportista, id_localidad)
+ public     | vino                     | uq_vino_nombre_anada_volumen |            | CREATE UNIQUE INDEX uq_vino_nombre_anada_volumen ON public.vino USING btree (nombre, anada, volumen_ml)
+ public     | vino                     | vino_pkey                    |            | CREATE UNIQUE INDEX vino_pkey ON public.vino USING btree (cod_vino)
+ public     | vino_maridaje            | vino_maridaje_pkey           |            | CREATE UNIQUE INDEX vino_maridaje_pkey ON public.vino_maridaje USING btree (cod_vino, id_maridaje)
+(36 rows)
+
+SELECT
+  (SELECT count(*) FROM indices_antes) antes,
+  (SELECT count(*) FROM pg_indexes WHERE schemaname='public') despues,
+  (SELECT count(*) FROM (
+    SELECT * FROM pg_indexes WHERE schemaname='public' EXCEPT TABLE indices_antes
+  ) i) nuevos,
+  (SELECT count(*) FROM (
+    TABLE indices_antes EXCEPT SELECT * FROM pg_indexes WHERE schemaname='public'
+  ) i) faltantes;
+ antes | despues | nuevos | faltantes 
+-------+---------+--------+-----------
+    36 |      36 |      0 |         0
+(1 row)
+
+Fin: 2026-11-03T19:48:56.952820-03:00 | Código: 0

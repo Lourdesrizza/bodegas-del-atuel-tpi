@@ -1,0 +1,204 @@
+Inicio: 2026-11-03T20:07:59.534445-03:00
+Base: atuel_base_test
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < consultas/linea_base_oficial.sql
+-- Consultas oficiales de select.sql. Usar la misma carga y parámetros en ambas mediciones.
+-- Para S4 y S8, registrar CURRENT_DATE y mantener la misma fecha efectiva al comparar.
+SELECT CURRENT_DATE fecha_referencia;
+ fecha_referencia 
+------------------
+ 2026-11-03
+(1 row)
+
+SELECT * FROM pg_indexes WHERE schemaname='public' ORDER BY tablename,indexname;
+ schemaname |        tablename         |          indexname           | tablespace |                                                             indexdef                                                             
+------------+--------------------------+------------------------------+------------+----------------------------------------------------------------------------------------------------------------------------------
+ public     | analisis_calidad         | analisis_calidad_pkey        |            | CREATE UNIQUE INDEX analisis_calidad_pkey ON public.analisis_calidad USING btree (id_analisis)
+ public     | auditoria_precio         | auditoria_precio_pkey        |            | CREATE UNIQUE INDEX auditoria_precio_pkey ON public.auditoria_precio USING btree (id_auditoria)
+ public     | bodega                   | bodega_pkey                  |            | CREATE UNIQUE INDEX bodega_pkey ON public.bodega USING btree (cuit)
+ public     | bodega                   | uq_bodega_razon_social       |            | CREATE UNIQUE INDEX uq_bodega_razon_social ON public.bodega USING btree (razon_social)
+ public     | cepa                     | cepa_pkey                    |            | CREATE UNIQUE INDEX cepa_pkey ON public.cepa USING btree (id_cepa)
+ public     | cliente                  | cliente_pkey                 |            | CREATE UNIQUE INDEX cliente_pkey ON public.cliente USING btree (id_cliente)
+ public     | cliente                  | uq_cliente_documento         |            | CREATE UNIQUE INDEX uq_cliente_documento ON public.cliente USING btree (tipo_doc, numero_doc)
+ public     | composicion              | composicion_pkey             |            | CREATE UNIQUE INDEX composicion_pkey ON public.composicion USING btree (cod_vino, id_cepa)
+ public     | comprobante              | comprobante_pkey             |            | CREATE UNIQUE INDEX comprobante_pkey ON public.comprobante USING btree (nro_comprobante)
+ public     | distribuidor             | distribuidor_pkey            |            | CREATE UNIQUE INDEX distribuidor_pkey ON public.distribuidor USING btree (id_cliente)
+ public     | empleado                 | empleado_pkey                |            | CREATE UNIQUE INDEX empleado_pkey ON public.empleado USING btree (cuit)
+ public     | exportador               | exportador_pkey              |            | CREATE UNIQUE INDEX exportador_pkey ON public.exportador USING btree (id_cliente)
+ public     | finca                    | finca_pkey                   |            | CREATE UNIQUE INDEX finca_pkey ON public.finca USING btree (id_finca)
+ public     | ingreso                  | ingreso_pkey                 |            | CREATE UNIQUE INDEX ingreso_pkey ON public.ingreso USING btree (cod_ingreso)
+ public     | localidad                | localidad_pkey               |            | CREATE UNIQUE INDEX localidad_pkey ON public.localidad USING btree (id_localidad)
+ public     | lote_uva                 | lote_uva_pkey                |            | CREATE UNIQUE INDEX lote_uva_pkey ON public.lote_uva USING btree (nro_lote)
+ public     | lote_uva                 | uq_lote_parcela_campania     |            | CREATE UNIQUE INDEX uq_lote_parcela_campania ON public.lote_uva USING btree (id_finca, nro_parcela, campania)
+ public     | maridaje                 | maridaje_pkey                |            | CREATE UNIQUE INDEX maridaje_pkey ON public.maridaje USING btree (id_maridaje)
+ public     | mv_ventas_mensuales_sala | uq_mv_ventas_mensuales_sala  |            | CREATE UNIQUE INDEX uq_mv_ventas_mensuales_sala ON public.mv_ventas_mensuales_sala USING btree (id_sala, anio, mes)
+ public     | parcela                  | parcela_pkey                 |            | CREATE UNIQUE INDEX parcela_pkey ON public.parcela USING btree (id_finca, nro_parcela)
+ public     | permiso_exportacion      | permiso_exportacion_pkey     |            | CREATE UNIQUE INDEX permiso_exportacion_pkey ON public.permiso_exportacion USING btree (cod_permiso)
+ public     | renglon_comprobante      | renglon_comprobante_pkey     |            | CREATE UNIQUE INDEX renglon_comprobante_pkey ON public.renglon_comprobante USING btree (nro_comprobante, cod_vino)
+ public     | renglon_ingreso          | renglon_ingreso_pkey         |            | CREATE UNIQUE INDEX renglon_ingreso_pkey ON public.renglon_ingreso USING btree (cod_ingreso, cod_vino)
+ public     | renglon_transferencia    | renglon_transferencia_pkey   |            | CREATE UNIQUE INDEX renglon_transferencia_pkey ON public.renglon_transferencia USING btree (nro_solicitud, cod_vino)
+ public     | sala_venta               | sala_venta_pkey              |            | CREATE UNIQUE INDEX sala_venta_pkey ON public.sala_venta USING btree (id_sala)
+ public     | socio                    | socio_pkey                   |            | CREATE UNIQUE INDEX socio_pkey ON public.socio USING btree (id_cliente)
+ public     | stock_deposito           | stock_deposito_pkey          |            | CREATE UNIQUE INDEX stock_deposito_pkey ON public.stock_deposito USING btree (cod_vino)
+ public     | stock_sala               | stock_sala_pkey              |            | CREATE UNIQUE INDEX stock_sala_pkey ON public.stock_sala USING btree (id_sala, cod_vino)
+ public     | tipo_cliente             | tipo_cliente_pkey            |            | CREATE UNIQUE INDEX tipo_cliente_pkey ON public.tipo_cliente USING btree (tipo_cliente)
+ public     | transferencia            | transferencia_pkey           |            | CREATE UNIQUE INDEX transferencia_pkey ON public.transferencia USING btree (nro_solicitud)
+ public     | transportista            | transportista_pkey           |            | CREATE UNIQUE INDEX transportista_pkey ON public.transportista USING btree (cod_transportista)
+ public     | transportista            | uq_transportista_cuit        |            | CREATE UNIQUE INDEX uq_transportista_cuit ON public.transportista USING btree (cuit)
+ public     | transportista_localidad  | transportista_localidad_pkey |            | CREATE UNIQUE INDEX transportista_localidad_pkey ON public.transportista_localidad USING btree (cod_transportista, id_localidad)
+ public     | vino                     | uq_vino_nombre_anada_volumen |            | CREATE UNIQUE INDEX uq_vino_nombre_anada_volumen ON public.vino USING btree (nombre, anada, volumen_ml)
+ public     | vino                     | vino_pkey                    |            | CREATE UNIQUE INDEX vino_pkey ON public.vino USING btree (cod_vino)
+ public     | vino_maridaje            | vino_maridaje_pkey           |            | CREATE UNIQUE INDEX vino_maridaje_pkey ON public.vino_maridaje USING btree (cod_vino, id_maridaje)
+(36 rows)
+
+ANALYZE comprobante, renglon_comprobante, vino, sala_venta, transferencia,
+        renglon_transferencia, lote_uva, parcela;
+ANALYZE
+-- S1 oficial
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT v.cod_vino,v.nombre,sum(r.cantidad) botellas FROM vino v JOIN renglon_comprobante r USING(cod_vino) GROUP BY v.cod_vino ORDER BY botellas DESC,v.cod_vino LIMIT 10;
+                                                                                   QUERY PLAN                                                                                   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=8608.92..8608.94 rows=10 width=31) (actual time=74.821..77.515 rows=10 loops=1)
+   Buffers: shared hit=3762
+   ->  Sort  (cost=8608.92..8610.42 rows=600 width=31) (actual time=74.819..77.512 rows=10 loops=1)
+         Sort Key: (sum(r.cantidad)) DESC, v.cod_vino
+         Sort Method: top-N heapsort  Memory: 26kB
+         Buffers: shared hit=3762
+         ->  Finalize GroupAggregate  (cost=8443.94..8595.95 rows=600 width=31) (actual time=74.671..77.451 rows=100 loops=1)
+               Group Key: v.cod_vino
+               Buffers: shared hit=3759
+               ->  Gather Merge  (cost=8443.94..8583.95 rows=1200 width=31) (actual time=74.664..77.412 rows=300 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=3759
+                     ->  Sort  (cost=7443.92..7445.42 rows=600 width=31) (actual time=66.540..66.547 rows=100 loops=3)
+                           Sort Key: v.cod_vino
+                           Sort Method: quicksort  Memory: 30kB
+                           Buffers: shared hit=3759
+                           Worker 0:  Sort Method: quicksort  Memory: 30kB
+                           Worker 1:  Sort Method: quicksort  Memory: 30kB
+                           ->  Partial HashAggregate  (cost=7410.23..7416.23 rows=600 width=31) (actual time=66.444..66.458 rows=100 loops=3)
+                                 Group Key: v.cod_vino
+                                 Batches: 1  Memory Usage: 57kB
+                                 Buffers: shared hit=3745
+                                 Worker 0:  Batches: 1  Memory Usage: 57kB
+                                 Worker 1:  Batches: 1  Memory Usage: 57kB
+                                 ->  Hash Join  (cost=22.50..6368.57 rows=208333 width=27) (actual time=0.337..45.550 rows=166667 loops=3)
+                                       Hash Cond: (r.cod_vino = v.cod_vino)
+                                       Buffers: shared hit=3745
+                                       ->  Parallel Seq Scan on renglon_comprobante r  (cost=0.00..5795.33 rows=208333 width=8) (actual time=0.021..13.511 rows=166667 loops=3)
+                                             Buffers: shared hit=3712
+                                       ->  Hash  (cost=15.00..15.00 rows=600 width=23) (actual time=0.264..0.264 rows=600 loops=3)
+                                             Buckets: 1024  Batches: 1  Memory Usage: 41kB
+                                             Buffers: shared hit=27
+                                             ->  Seq Scan on vino v  (cost=0.00..15.00 rows=600 width=23) (actual time=0.022..0.125 rows=600 loops=3)
+                                                   Buffers: shared hit=27
+ Planning:
+   Buffers: shared hit=82
+ Planning Time: 1.025 ms
+ Execution Time: 77.699 ms
+(39 rows)
+
+-- S4 oficial
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT t.id_sala,sum(r.cantidad) botellas FROM transferencia t JOIN renglon_transferencia r USING(nro_solicitud) WHERE r.cod_vino=1 AND t.fecha_confeccion BETWEEN CURRENT_DATE-14 AND CURRENT_DATE GROUP BY t.id_sala ORDER BY botellas DESC,t.id_sala LIMIT 5;
+                                                                       QUERY PLAN                                                                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=32.46..32.46 rows=1 width=12) (actual time=0.081..0.082 rows=0 loops=1)
+   Buffers: shared hit=10
+   ->  Sort  (cost=32.46..32.46 rows=1 width=12) (actual time=0.081..0.081 rows=0 loops=1)
+         Sort Key: (sum(r.cantidad)) DESC, t.id_sala
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=10
+         ->  GroupAggregate  (cost=32.43..32.45 rows=1 width=12) (actual time=0.075..0.075 rows=0 loops=1)
+               Group Key: t.id_sala
+               Buffers: shared hit=10
+               ->  Sort  (cost=32.43..32.43 rows=1 width=8) (actual time=0.074..0.075 rows=0 loops=1)
+                     Sort Key: t.id_sala
+                     Sort Method: quicksort  Memory: 25kB
+                     Buffers: shared hit=10
+                     ->  Nested Loop  (cost=0.28..32.42 rows=1 width=8) (actual time=0.069..0.069 rows=0 loops=1)
+                           Buffers: shared hit=10
+                           ->  Seq Scan on transferencia t  (cost=0.00..23.50 rows=1 width=8) (actual time=0.069..0.069 rows=0 loops=1)
+                                 Filter: ((fecha_confeccion <= CURRENT_DATE) AND (fecha_confeccion >= (CURRENT_DATE - 14)))
+                                 Rows Removed by Filter: 600
+                                 Buffers: shared hit=10
+                           ->  Index Scan using renglon_transferencia_pkey on renglon_transferencia r  (cost=0.28..8.30 rows=1 width=8) (never executed)
+                                 Index Cond: ((nro_solicitud = t.nro_solicitud) AND (cod_vino = 1))
+ Planning:
+   Buffers: shared hit=50
+ Planning Time: 0.695 ms
+ Execution Time: 0.149 ms
+(25 rows)
+
+-- S8 oficial
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT s.id_sala,coalesce(sum(c.total),0) total FROM sala_venta s LEFT JOIN comprobante c ON c.id_sala=s.id_sala AND c.fecha BETWEEN CURRENT_DATE-interval '3 months' AND CURRENT_DATE GROUP BY s.id_sala ORDER BY total DESC,s.id_sala;
+                                                              QUERY PLAN                                                              
+--------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=4852.76..4852.82 rows=25 width=36) (actual time=25.690..25.693 rows=25 loops=1)
+   Sort Key: (COALESCE(sum(c.total), '0'::numeric)) DESC, s.id_sala
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=1289
+   ->  HashAggregate  (cost=4851.86..4852.18 rows=25 width=36) (actual time=25.667..25.674 rows=25 loops=1)
+         Group Key: s.id_sala
+         Batches: 1  Memory Usage: 32kB
+         Buffers: shared hit=1289
+         ->  Hash Right Join  (cost=1.56..4735.81 rows=23210 width=11) (actual time=0.039..21.895 rows=22851 loops=1)
+               Hash Cond: (c.id_sala = s.id_sala)
+               Buffers: shared hit=1289
+               ->  Seq Scan on comprobante c  (cost=0.00..4663.00 rows=23210 width=11) (actual time=0.011..18.633 rows=22851 loops=1)
+                     Filter: ((fecha <= CURRENT_DATE) AND (fecha >= (CURRENT_DATE - '3 mons'::interval)))
+                     Rows Removed by Filter: 127149
+                     Buffers: shared hit=1288
+               ->  Hash  (cost=1.25..1.25 rows=25 width=4) (actual time=0.019..0.020 rows=25 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=1
+                     ->  Seq Scan on sala_venta s  (cost=0.00..1.25 rows=25 width=4) (actual time=0.006..0.008 rows=25 loops=1)
+                           Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=55
+ Planning Time: 0.939 ms
+ Execution Time: 25.815 ms
+(24 rows)
+
+-- S10 oficial
+EXPLAIN (ANALYZE, BUFFERS)
+WITH rendimiento AS (SELECT l.id_finca,l.nro_parcela,l.campania,l.kilos/p.superficie kg_ha FROM lote_uva l JOIN parcela p USING(id_finca,nro_parcela)) SELECT r.*,r.kg_ha<(SELECT avg(f.kg_ha) FROM rendimiento f WHERE f.id_finca=r.id_finca AND f.campania=r.campania) bajo_promedio FROM rendimiento r ORDER BY id_finca,nro_parcela,campania;
+                                                           QUERY PLAN                                                            
+---------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=225383.07..225390.57 rows=3000 width=43) (actual time=619.822..620.014 rows=3000 loops=1)
+   Sort Key: r.id_finca, r.nro_parcela, r.campania
+   Sort Method: quicksort  Memory: 214kB
+   Buffers: shared hit=29
+   CTE rendimiento
+     ->  Hash Join  (cost=19.00..97.31 rows=3000 width=42) (actual time=25.301..26.478 rows=3000 loops=1)
+           Hash Cond: ((l.id_finca = p.id_finca) AND (l.nro_parcela = p.nro_parcela))
+           Buffers: shared hit=29
+           ->  Seq Scan on lote_uva l  (cost=0.00..55.00 rows=3000 width=15) (actual time=0.008..0.167 rows=3000 loops=1)
+                 Buffers: shared hit=25
+           ->  Hash  (cost=10.00..10.00 rows=600 width=13) (actual time=25.270..25.271 rows=600 loops=1)
+                 Buckets: 1024  Batches: 1  Memory Usage: 37kB
+                 Buffers: shared hit=4
+                 ->  Seq Scan on parcela p  (cost=0.00..10.00 rows=600 width=13) (actual time=25.078..25.146 rows=600 loops=1)
+                       Buffers: shared hit=4
+   ->  CTE Scan on rendimiento r  (cost=0.00..225112.50 rows=3000 width=43) (actual time=27.167..617.153 rows=3000 loops=1)
+         Buffers: shared hit=29
+         SubPlan 2
+           ->  Aggregate  (cost=75.00..75.02 rows=1 width=32) (actual time=0.196..0.196 rows=1 loops=3000)
+                 Buffers: shared hit=24
+                 ->  CTE Scan on rendimiento f  (cost=0.00..75.00 rows=1 width=32) (actual time=0.075..0.190 rows=30 loops=3000)
+                       Filter: ((id_finca = r.id_finca) AND (campania = r.campania))
+                       Rows Removed by Filter: 2970
+                       Buffers: shared hit=24
+ Planning:
+   Buffers: shared hit=45
+ Planning Time: 0.649 ms
+ JIT:
+   Functions: 25
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 2.049 ms, Inlining 0.000 ms, Optimization 1.407 ms, Emission 23.688 ms, Total 27.143 ms
+ Execution Time: 702.982 ms
+(32 rows)
+
+Fin: 2026-11-03T20:08:00.948870-03:00 | Código: 0

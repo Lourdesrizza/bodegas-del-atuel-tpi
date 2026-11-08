@@ -1,0 +1,32 @@
+Fecha: 2026-11-03T20:59:26.0873209-03:00
+Comando: Invoke-WebRequest http://127.0.0.1:18066/salud, /docs y /openapi.json
+GET /salud HTTP 200
+{"ok":true,"rol":"app_rw"}
+GET /docs HTTP 200
+GET /openapi.json HTTP 200
+/salud
+/vinos
+/vinos/{cod}
+/clientes
+/clientes/{cod}
+/comprobantes
+/comprobantes/{nro}
+/ingresos
+/transferencias
+/ingresos/{cod}
+/ingresos/{cod}/renglones
+/ingresos/{cod}/terminar
+/ingresos/{cod}/procesar
+/transferencias/{cod}
+/transferencias/{cod}/renglones
+/transferencias/{cod}/terminar
+/transferencias/{cod}/procesar
+/reportes/top-vinos
+/reportes/ventas-por-sala
+/reportes/vinos-sin-stock
+/reportes/transportista-activo
+/reportes/trazabilidad/{cod}
+Comando: docker exec -i atuel-etapa6-validada-api-1 python - (consulta vía psycopg TCP con app_rw)
+('atuel_api_test', 'app_rw', True, 'PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit')
+(False, False)
+(5,)

@@ -1,0 +1,42 @@
+Base: atuel_base_test
+
+Inicio: 2026-11-03T19:39:36.103562-03:00
+Comando: docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_base_test -v ON_ERROR_STOP=1 -P pager=off -a -f - < docs\evidencias_etapa_5\equivalencia_s12.sql
+BEGIN;
+BEGIN
+-- Índice auxiliar exclusivamente para ejecutar la versión original en esta comparación.
+CREATE INDEX etapa5_equivalencia_cliente ON comprobante(id_cliente);
+CREATE INDEX
+CREATE TEMP TABLE s12_original AS
+WITH objetivo AS (SELECT cod_vino FROM vino WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)) SELECT cl.id_cliente FROM cliente cl WHERE EXISTS (SELECT FROM objetivo) AND NOT EXISTS (SELECT FROM objetivo v WHERE NOT EXISTS (SELECT FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante) WHERE c.id_cliente=cl.id_cliente AND r.cod_vino=v.cod_vino)) ORDER BY cl.id_cliente;
+SELECT 0
+CREATE TEMP TABLE s12_reformulada AS
+WITH objetivo AS (
+  SELECT cod_vino FROM vino
+  WHERE cuit_bodega=(SELECT cuit FROM bodega ORDER BY cuit LIMIT 1)
+), compras AS (
+  SELECT c.id_cliente,array_agg(DISTINCT r.cod_vino) vinos
+  FROM comprobante c JOIN renglon_comprobante r USING(nro_comprobante)
+  JOIN objetivo v USING(cod_vino)
+  GROUP BY c.id_cliente
+)
+SELECT c.id_cliente FROM compras c
+WHERE NOT EXISTS (
+  SELECT FROM objetivo v WHERE NOT EXISTS (
+    SELECT FROM unnest(c.vinos) compra(cod_vino) WHERE compra.cod_vino=v.cod_vino
+  )
+)
+ORDER BY c.id_cliente;
+SELECT 0
+SELECT (SELECT count(*) FROM s12_original) original,
+       (SELECT count(*) FROM s12_reformulada) reformulada,
+       (SELECT count(*) FROM (TABLE s12_original EXCEPT TABLE s12_reformulada) a) solo_original,
+       (SELECT count(*) FROM (TABLE s12_reformulada EXCEPT TABLE s12_original) b) solo_reformulada;
+ original | reformulada | solo_original | solo_reformulada 
+----------+-------------+---------------+------------------
+        0 |           0 |             0 |                0
+(1 row)
+
+ROLLBACK;
+ROLLBACK
+Fin: 2026-11-03T19:39:40.399182-03:00 | Código: 0

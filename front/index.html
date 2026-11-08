@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#503429">
+  <title>Bodegas del Atuel · Gestión</title>
+  <link rel="icon" href="./icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="saltar" href="#principal">Ir al contenido</a>
+  <aside class="lateral">
+    <a class="marca" href="#catalogo" aria-label="Bodegas del Atuel, inicio">
+      <span class="marca-simbolo" aria-hidden="true">a<span>✳</span></span>
+      <span>Bodegas<br><strong>del Atuel</strong><small>MENDOZA · ARGENTINA</small></span>
+    </a>
+    <p class="nav-etiqueta">ESPACIO DE GESTIÓN</p>
+    <nav class="navegacion" aria-label="Principal">
+      <a href="#catalogo" data-vista="catalogo"><span aria-hidden="true">♧</span> Catálogo de vinos</a>
+      <a href="#vino" data-vista="vino"><span aria-hidden="true">＋</span> Alta y edición</a>
+      <a href="#venta" data-vista="venta"><span aria-hidden="true">▤</span> Nueva venta</a>
+      <a href="#transferencias" data-vista="transferencias"><span aria-hidden="true">⇄</span> Transferencias</a>
+      <a href="#tablero" data-vista="tablero"><span aria-hidden="true">▥</span> Tablero</a>
+    </nav>
+    <div class="lateral-pie"><span class="mini-flor" aria-hidden="true">✳</span><p>De nuestra tierra,<br><em>a cada encuentro.</em></p><small>Gestión vitivinícola</small></div>
+  </aside>
+  <div class="aplicacion">
+    <header class="barra-superior"><span>BODEGAS DEL ATUEL <span class="separador">/</span> <span id="ruta-actual">Catálogo</span></span><span class="ubicacion">Mendoza, Argentina <span class="avatar" aria-hidden="true">BA</span></span></header>
+    <main id="principal" tabindex="-1">
+      <section id="vista-catalogo" class="vista" aria-labelledby="titulo-catalogo">
+        <div class="titulo-pagina"><div><p class="sobre-titulo">NUESTRA SELECCIÓN</p><h1 id="titulo-catalogo">El vino nos encuentra.</h1><p>Explorá el catálogo, sus cepas y las combinaciones que lo hacen único.</p></div><a class="boton primario" href="#vino">＋ Registrar vino</a></div>
+        <div class="franja-catalogo"><div><span class="sello">EL ORIGEN DE CADA COPA</span><h2>Carácter de nuestra tierra.</h2><p>Vinos, historias y sabores del Atuel.</p><span class="firma">Cultivamos encuentros.</span></div><div class="arte-vinedo" aria-hidden="true"><span class="sol"></span><span class="cerro cerro-uno"></span><span class="cerro cerro-dos"></span><span class="surcos"></span><span class="botella botella-hero"><i></i></span><span class="copa"></span></div></div>
+        <form id="filtros" class="panel filtros" aria-label="Filtros del catálogo">
+          <label class="busqueda">Buscar un vino<input name="nombre" type="search" maxlength="120" placeholder="Nombre del vino…"></label>
+          <label>Tipo<select name="tipo"><option value="">Todos los tipos</option><option value="tinto">Tinto</option><option value="blanco">Blanco</option><option value="rosado">Rosado</option><option value="espumante">Espumante</option></select></label>
+          <label>Cepa · ID<input name="cepa" type="number" min="1" max="2147483647" placeholder="Todas"></label>
+          <label>Bodega · CUIT<input name="bodega" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" placeholder="Todas las bodegas"></label>
+          <label>Añada<input name="anada" type="number" min="1990" max="2100" placeholder="Todas"></label>
+          <button type="submit" class="boton primario">Filtrar</button><button type="reset" class="boton texto">Limpiar</button>
+        </form>
+        <div id="catalogo-error" class="mensaje error" role="alert" hidden></div>
+        <div class="encima-lista"><h2>Vinos del catálogo <span class="puntito">✳</span></h2><span id="catalogo-estado" role="status" aria-live="polite">Cargando vinos…</span></div>
+        <div id="lista" class="lista"></div>
+        <nav class="paginas" aria-label="Páginas del catálogo"><button id="anterior" class="boton secundario" disabled>← Anterior</button><span id="pagina">Página 1</span><button id="siguiente" class="boton secundario" disabled>Siguiente →</button></nav>
+      </section>
+
+      <section id="vista-vino" class="vista" aria-labelledby="titulo-vino" hidden>
+        <div class="titulo-pagina"><div><p class="sobre-titulo">CUIDAMOS CADA DETALLE</p><h1 id="titulo-vino">Un lugar para cada vino.</h1><p>Registrá una nueva etiqueta o actualizá su ficha y composición.</p></div><span class="insignia">CATÁLOGO</span></div>
+        <form id="buscar-edicion" class="panel barra-form"><label>Código de vino para editar<input name="codigo" type="number" min="1" max="2147483647" required placeholder="Ej. 12"></label><button class="boton secundario">Cargar ficha</button><button id="nuevo-vino" type="button" class="boton texto">Crear uno nuevo</button></form>
+        <div id="vino-mensaje" class="mensaje" role="status" hidden></div>
+        <form id="form-vino" class="dos-columnas">
+          <div class="panel espacio"><div class="titulo-panel"><span class="numero-paso">01</span><div><h2>Ficha del vino</h2><p id="modo-vino">Nueva etiqueta</p></div></div>
+            <div class="campos dos">
+              <label class="completo">Nombre comercial<input name="nombre" required maxlength="120" placeholder="Ej. Reserva del Atuel"></label>
+              <label class="completo">CUIT de la bodega<input name="cuit_bodega" required pattern="[0-9]{11}" maxlength="11" inputmode="numeric" placeholder="11 dígitos"></label>
+              <label>Tipo<select name="tipo"><option value="tinto">Tinto</option><option value="blanco">Blanco</option><option value="rosado">Rosado</option><option value="espumante">Espumante</option></select></label>
+              <label>Añada<input name="anada" required type="number" min="1990" max="2100" placeholder="2025"></label>
+              <label>Presentación<select name="volumen_ml"><option value="750">750 ml</option><option value="187">187 ml</option><option value="375">375 ml</option><option value="1500">1500 ml</option><option value="3000">3000 ml</option></select></label>
+              <label>Graduación alcohólica<input name="graduacion" type="number" step="0.01" min="5" max="20" required placeholder="13,5"></label>
+              <label class="completo">Precio de catálogo en pesos<input name="precio" type="number" min="0.01" step="0.01" required placeholder="12500"></label>
+            </div>
+          </div>
+          <div class="columna"><div class="panel espacio"><div class="titulo-panel"><span class="numero-paso">02</span><div><h2>Composición</h2><p>El corte completo debe sumar 100 %.</p></div></div><div id="cortes"></div><button type="button" id="agregar-cepa" class="boton secundario ancho-total">＋ Agregar cepa</button></div><div class="panel espacio"><h2>Maridajes</h2><label>Identificadores de maridaje<input name="maridajes" placeholder="Ej. 1, 3, 5" pattern="\s*[0-9]+(\s*,\s*[0-9]+)*\s*|\s*"></label><p class="ayuda">Separá los códigos con comas. Es opcional.</p></div><button id="guardar-vino" class="boton primario ancho-total" type="submit">Guardar vino →</button></div>
+        </form>
+      </section>
+
+      <section id="vista-venta" class="vista" aria-labelledby="titulo-venta" hidden>
+        <div class="titulo-pagina"><div><p class="sobre-titulo">CADA ENCUENTRO CUENTA</p><h1 id="titulo-venta">Una nueva venta.</h1><p>Elegí el cliente, la sala y los vinos para registrar el comprobante.</p></div><span class="insignia">VENTAS</span></div>
+        <div id="venta-mensaje" class="mensaje" role="status" hidden></div>
+        <form id="form-venta" class="dos-columnas venta-columnas">
+          <div class="columna"><div class="panel espacio"><div class="titulo-panel"><span class="numero-paso">01</span><div><h2>Cliente y sala</h2><p>¿Con quién compartimos esta selección?</p></div></div><label>Cliente<select id="venta-cliente" name="id_cliente" required><option value="">Cargando clientes…</option></select></label><div class="paginas compactas"><button type="button" id="clientes-anterior" class="boton texto" disabled>← Anteriores</button><span id="clientes-pagina">Página 1</span><button type="button" id="clientes-siguiente" class="boton texto">Más clientes →</button></div><label>Sala de venta<input name="id_sala" type="number" min="1" max="2147483647" required list="salas" placeholder="Código de sala"></label></div>
+          <div class="panel espacio"><div class="titulo-panel"><span class="numero-paso">02</span><div><h2>Selección de vinos</h2><p>Agregá el código del vino y la cantidad de botellas.</p></div></div><div id="venta-renglones"></div><button id="agregar-venta" type="button" class="boton secundario ancho-total">＋ Agregar vino</button></div></div>
+          <aside class="panel espacio resumen"><p class="sobre-titulo">EL COMPROBANTE</p><span class="flor-resumen" aria-hidden="true">✳</span><h2>Todo en su medida.</h2><p>El precio vigente, el descuento del cliente y el total se confirman al registrar la venta.</p><div class="nota-rosa">El comprobante emitido aparecerá aquí con sus importes.</div><button id="registrar-venta" type="submit" class="boton primario ancho-total">Registrar venta →</button><div id="venta-resultado" aria-live="polite"></div></aside>
+        </form>
+      </section>
+
+      <section id="vista-transferencias" class="vista" aria-labelledby="titulo-transferencias" hidden>
+        <div class="titulo-pagina"><div><p class="sobre-titulo">DEL DEPÓSITO A LA SALA</p><h1 id="titulo-transferencias">Vinos en movimiento.</h1><p>Creá una solicitud, agregá sus vinos y seguí cada paso del traslado.</p></div><span class="insignia">DISTRIBUCIÓN</span></div>
+        <div id="transferencia-mensaje" class="mensaje" role="status" hidden></div>
+        <div class="dos-columnas"><div class="columna"><form id="crear-transferencia" class="panel espacio"><h2>Nueva transferencia</h2><label>Sala de destino<input name="id_sala" type="number" min="1" max="2147483647" required list="salas" placeholder="Código de sala"></label><button class="boton primario">Crear solicitud →</button></form><form id="buscar-transferencia" class="panel espacio"><h2>Consultar solicitud</h2><label>Número de transferencia<input name="codigo" type="number" min="1" max="2147483647" required placeholder="Ej. 25"></label><button class="boton secundario">Consultar</button></form></div>
+          <div id="transferencia-detalle" class="panel espacio"><div class="vacio"><span aria-hidden="true">⇄</span><h2>Cada vino, a su destino.</h2><p>Creá o consultá una solicitud para ver su estado y continuar.</p></div></div></div>
+      </section>
+
+      <section id="vista-tablero" class="vista" aria-labelledby="titulo-tablero" hidden>
+        <div class="titulo-pagina"><div><p class="sobre-titulo">UNA MIRADA AL NEGOCIO</p><h1 id="titulo-tablero">El pulso del Atuel.</h1><p>Las etiquetas más elegidas y el movimiento de nuestras salas.</p></div><button id="actualizar-tablero" class="boton secundario">↻ Actualizar</button></div>
+        <div class="dos-columnas"><section class="panel espacio"><div class="cabecera-panel"><h2>Los 10 más elegidos</h2><span class="insignia">BOTELLAS</span></div><p class="ayuda">Ranking de vinos vendidos en todo el historial.</p><div id="ranking"></div></section><section class="panel espacio"><div class="cabecera-panel"><h2>Ventas por sala</h2><span class="insignia">3 MESES</span></div><p class="ayuda">Importes registrados en los últimos tres meses.</p><div id="grafico"></div></section></div>
+        <section class="panel espacio stock-panel"><div><p class="sobre-titulo">DISPONIBILIDAD</p><h2>Para volver a encontrarnos.</h2><p>Vinos sin stock en la sala elegida, con disponibilidad en depósito.</p></div><form id="buscar-stock" class="barra-form"><label>Sala de venta<input name="sala" type="number" min="1" max="2147483647" required list="salas" placeholder="Código de sala"></label><button class="boton secundario">Consultar stock</button></form><div id="stock-resultado" aria-live="polite"></div><div class="paginas compactas" id="stock-paginas" hidden><button id="stock-anterior" type="button" class="boton texto">← Anterior</button><span id="stock-pagina"></span><button id="stock-siguiente" type="button" class="boton texto">Siguiente →</button></div></section>
+      </section>
+      <footer class="pie-pagina"><span>Bodegas del Atuel</span><span>Hecho de tierra, tiempo y encuentros. <span aria-hidden="true">✳</span></span></footer>
+    </main>
+  </div>
+  <datalist id="salas"></datalist>
+  <dialog id="detalle" aria-labelledby="detalle-titulo"><div class="dialogo-cabecera"><p class="sobre-titulo">FICHA DEL VINO</p><button id="cerrar" class="boton texto" type="button" aria-label="Cerrar detalle">✕</button></div><h2 id="detalle-titulo"></h2><div id="detalle-contenido"></div></dialog>
+</body>
+</html>

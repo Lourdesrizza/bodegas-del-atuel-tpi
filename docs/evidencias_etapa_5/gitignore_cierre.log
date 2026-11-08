@@ -1,0 +1,9 @@
+Inicio: 2026-11-03T19:39:36.9715961-03:00
+Comando: git check-ignore -v -- .env
+.gitignore:1:.env	.env
+Código: 0
+Comando: git check-ignore -q -- .env.example
+Código: 1 (1 = permitido)
+Comando: git ls-files -- .env .env.example
+.env.example
+Código: 0

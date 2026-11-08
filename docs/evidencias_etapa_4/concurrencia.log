@@ -1,0 +1,48 @@
+docker exec -i atuel_pg16_carga_test psql -X -w -U atuel_admin -d atuel_e4m_regresion_test -v ON_ERROR_STOP=1 -P pager=off -a -f -
+BEGIN;
+BEGIN
+INSERT INTO localidad VALUES(1,'5600','San Rafael','Mendoza','X');
+INSERT 0 1
+INSERT INTO sala_venta VALUES(1,1,'Mitre','1','Lunes');
+INSERT 0 1
+INSERT INTO bodega VALUES('30708090101','Bodega','X');
+INSERT 0 1
+INSERT INTO cepa VALUES(1,'Malbec','tinta');
+INSERT 0 1
+INSERT INTO vino VALUES(1,'30708090101','Vino','tinto',2024,750,13,100);
+INSERT 0 1
+INSERT INTO composicion VALUES(1,1,100);
+INSERT 0 1
+INSERT INTO cliente VALUES(1,1,'Cliente','DNI','1','X',CURRENT_DATE,'socio');
+INSERT 0 1
+INSERT INTO socio VALUES(1);
+INSERT 0 1
+INSERT INTO stock_sala VALUES(1,1,1);
+INSERT 0 1
+INSERT INTO comprobante(nro_comprobante,id_cliente,id_sala) VALUES(1,1,1),(2,1,1);
+INSERT 0 2
+COMMIT;
+COMMIT
+
+BEGIN; INSERT INTO renglon_comprobante VALUES(1,1,1,0,0,0); SELECT pg_sleep(0.5); COMMIT;
+Código: 3
+BEGIN; INSERT INTO renglon_comprobante VALUES(1,1,1,0,0,0); SELECT pg_sleep(0.5); COMMIT;
+BEGIN
+psql:<stdin>:1: ERROR:  Stock insuficiente en sala para vino 1 (RN-09)
+CONTEXT:  PL/pgSQL function trg_fn_validar_renglon_venta() line 16 at RAISE
+
+BEGIN; INSERT INTO renglon_comprobante VALUES(2,1,1,0,0,0); SELECT pg_sleep(0.5); COMMIT;
+Código: 0
+BEGIN; INSERT INTO renglon_comprobante VALUES(2,1,1,0,0,0); SELECT pg_sleep(0.5); COMMIT;
+BEGIN
+INSERT 0 1
+ pg_sleep
+----------
+
+(1 row)
+
+COMMIT
+
+SELECT cantidad,(SELECT count(*) FROM renglon_comprobante) FROM stock_sala WHERE id_sala=1 AND cod_vino=1;
+Stock|ventas: 0|1
+OK: una sola venta confirmó la última botella.
