@@ -28,5 +28,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+  front:
+    build: ./front
+    environment:
+      ATUEL_API_URL: http://api:8000
+    ports:
+      - "127.0.0.1:${ATUEL_FRONT_PORT:-5173}:5173"
+    depends_on:
+      - api
 volumes:
   etapa6_data:
